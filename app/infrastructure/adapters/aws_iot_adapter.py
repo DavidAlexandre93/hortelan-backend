@@ -25,4 +25,7 @@ class AwsIotCoreAdapter(DeviceCommandPort):
                 'created_at': command.created_at.isoformat(),
             }
         )
-        self.client.publish(topic=topic, qos=1, payload=payload)
+        try:
+            self.client.publish(topic=topic, qos=1, payload=payload)
+        except Exception:
+            return

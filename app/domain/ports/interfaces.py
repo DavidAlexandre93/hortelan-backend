@@ -31,6 +31,9 @@ class RelationalTelemetryRepositoryPort(ABC):
     @abstractmethod
     async def save(self, reading: TelemetryReading) -> None: ...
 
+    @abstractmethod
+    async def list_recent(self, limit: int = 20, device_id: str | None = None) -> list[TelemetryReading]: ...
+
 
 class DocumentTelemetryRepositoryPort(ABC):
     @abstractmethod
