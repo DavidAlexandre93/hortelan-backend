@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,7 +24,13 @@ class Settings(BaseSettings):
 
     redis_url: str = 'redis://localhost:6379/0'
 
-    relational_db_url: str = 'sqlite+aiosqlite:///./hortelan.db'
+    relational_db_url: str = Field(
+        default_factory=lambda: (
+            'sqlite+aiosqlite:////tmp/hortelan.db'
+            if os.getenv('VERCEL')
+            else 'sqlite+aiosqlite:///./hortelan.db'
+        )
+    )
     mongo_url: str = 'mongodb://localhost:27017'
     mongo_db_name: str = 'hortelan'
 
