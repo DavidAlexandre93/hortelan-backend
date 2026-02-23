@@ -65,17 +65,22 @@ WEB3_CONTRACT_ABI_JSON=[]
 WEB3_ACCOUNT_PRIVATE_KEY=
 ```
 
+## Gerenciamento de dependências com Poetry
+
+Este projeto utiliza o **Poetry** para gerenciar dependências e ambiente virtual.
+
+```bash
+poetry install
+```
+
 ## Execução
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+poetry run uvicorn app.main:app --reload --port 8000
 ```
 
 ## Testes
 
 ```bash
-pytest -q
+poetry run pytest -q
 ```

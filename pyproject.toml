@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "hortelan-backend"
+version = "0.1.0"
+description = "Backend do Hortelan com FastAPI e arquitetura hexagonal"
+authors = ["Hortelan Team"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+fastapi = "0.115.0"
+uvicorn = { version = "0.30.6", extras = ["standard"] }
+pydantic-settings = "2.5.2"
+aiokafka = "0.11.0"
+boto3 = "1.35.24"
+redis = "5.0.8"
+web3 = "7.2.0"
+sqlalchemy = "2.0.35"
+aiosqlite = "0.20.0"
+motor = "3.6.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "8.3.3"
+pytest-asyncio = "0.24.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
