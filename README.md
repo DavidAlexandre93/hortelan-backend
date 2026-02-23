@@ -74,6 +74,35 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
+## Deploy na Vercel
+
+Este projeto já está preparado para rodar como função Python (ASGI) na Vercel:
+
+- `api/index.py` exporta a instância `app` do FastAPI.
+- `vercel.json` direciona todas as rotas para essa função.
+
+### Passos
+
+1. Instale a CLI da Vercel e autentique:
+
+   ```bash
+   npm i -g vercel
+   vercel login
+   ```
+
+2. Faça o deploy:
+
+   ```bash
+   vercel
+   ```
+
+3. Configure as variáveis de ambiente no painel da Vercel (Project Settings → Environment Variables).
+
+### Observações importantes para produção
+
+- Defina serviços gerenciados para Redis, Kafka, MongoDB e banco relacional.
+- Em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o backend usa `sqlite` em `/tmp/hortelan.db` (ephemero, apenas fallback).
+
 ## Testes
 
 ```bash
