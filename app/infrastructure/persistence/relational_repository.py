@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String
+from sqlalchemy import DateTime, Float, String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -45,3 +45,24 @@ class SqlAlchemyTelemetryRepository(RelationalTelemetryRepositoryPort):
                 )
             )
             await session.commit()
+
+    async def list_recent(self, limit: int = 20, device_id: str | None = None) -> list[TelemetryReading]:
+        stmt = select(TelemetryORM).order_by(TelemetryORM.captured_at.desc()).limit(limit)
+        if device_id:
+            stmt = stmt.where(TelemetryORM.device_id == device_id)
+
+        async with self.session_factory() as session:
+            rows = await session.scalars(stmt)
+            items = list(rows)
+
+        return [
+            TelemetryReading(
+                device_id=item.device_id,
+                moisture=item.moisture,
+                temperature=item.temperature,
+                ph=item.ph,
+                captured_at=item.captured_at,
+                metadata={},
+            )
+            for item in items
+        ]

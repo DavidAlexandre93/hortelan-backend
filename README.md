@@ -33,6 +33,10 @@ app/
 - `POST /api/v1/telemetry`
 - `POST /api/v1/commands`
 - `POST /api/v1/ledger`
+- `GET /api/v1/telemetry?limit=20&device_id=<opcional>`
+- `GET /api/v1/telemetry/latest/{device_id}`
+- `GET /api/v1/commands/latest/{device_id}`
+- `GET /api/v1/devices/{device_id}/snapshot`
 
 ## Integração com frontend
 
