@@ -64,3 +64,19 @@ class StrategicCoverageReportOut(BaseModel):
     overall_result: str
     matrix: list[StrategicFeatureCoverageOut]
     next_steps: list[str]
+
+
+class ProductModuleCoverageOut(BaseModel):
+    slug: str
+    title: str
+    stage: str
+    status: str
+    implemented: bool
+    existing_endpoints: list[str] = Field(default_factory=list)
+    endpoint: str
+    notes: str
+
+
+class ProductReadinessReportOut(BaseModel):
+    summary: str
+    modules: list[ProductModuleCoverageOut]
