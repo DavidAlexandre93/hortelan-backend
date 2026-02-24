@@ -41,3 +41,14 @@ class LedgerRecordIn(BaseModel):
 class AckResponse(BaseModel):
     status: str
     timestamp: datetime
+
+
+class RequirementCoverageOut(BaseModel):
+    requirement_id: str
+    title: str
+    endpoint: str
+    implemented: bool
+
+
+class RequirementDetailOut(RequirementCoverageOut):
+    notes: str
