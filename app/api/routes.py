@@ -148,7 +148,7 @@ REQUIREMENT_CATALOG: list[tuple[str, str]] = [
     ('25.4', 'Backup e recuperação'),
 ]
 
-IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '25.1'}
+IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '18.7', '25.1', '25.2'}
 
 PRODUCT_MODULES: list[dict[str, object]] = [
     {

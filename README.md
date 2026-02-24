@@ -171,6 +171,18 @@ curl -X POST "http://localhost:8000/api/v1/commands" \
 
 ### 3) Registrar no ledger
 
+- `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /metrics`
+- `POST /api/v1/telemetry`
+- `POST /api/v1/commands`
+- `POST /api/v1/ledger`
+- `GET /api/v1/telemetry?limit=20&device_id=<opcional>`
+- `GET /api/v1/telemetry/latest/{device_id}`
+- `GET /api/v1/commands/latest/{device_id}`
+- `GET /api/v1/devices/{device_id}/snapshot`
+- `GET /api/v1/strategic/coverage`
 ```bash
 curl -X POST "http://localhost:8000/api/v1/ledger" \
   -H "Content-Type: application/json" \
@@ -182,6 +194,9 @@ curl -X POST "http://localhost:8000/api/v1/ledger" \
 
 ### 4) Obter snapshot por dispositivo
 
+1. Configure CORS em `cors_origins` (arquivo `.env`).
+2. O frontend pode enviar telemetria e comandos pelos endpoints REST.
+3. Para produção, adicione autenticação (JWT/Cognito).
 ```bash
 curl "http://localhost:8000/api/v1/devices/sensor-01/snapshot"
 ```
@@ -216,6 +231,24 @@ WEB3_CONTRACT_ABI_JSON=[]
 WEB3_ACCOUNT_PRIVATE_KEY=
 ```
 
+
+## Observabilidade e monitoramento
+
+A API agora inclui uma camada base de observabilidade:
+
+- **Logs estruturados em JSON** com `request_id`, `trace_id` e `span_id`.
+- **Métricas HTTP** em formato Prometheus (`/metrics`), incluindo total de requisições, requisições em andamento e latência média por rota.
+- **Health checks** separados para liveness (`/health/live`) e readiness (`/health/ready`).
+- **Headers de rastreabilidade** em todas as respostas: `x-request-id`, `x-trace-id`, `x-span-id`, `x-response-time-ms`.
+
+Variáveis de ambiente adicionais:
+
+```env
+LOG_LEVEL=INFO
+ENABLE_METRICS=true
+```
+
+## Gerenciamento de dependências com Poetry
 > Observação: em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o fallback é `sqlite` em `/tmp/hortelan.db`.
 
 ## Testes e qualidade
