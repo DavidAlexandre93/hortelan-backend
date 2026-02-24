@@ -52,3 +52,15 @@ class RequirementCoverageOut(BaseModel):
 
 class RequirementDetailOut(RequirementCoverageOut):
     notes: str
+
+
+class StrategicFeatureCoverageOut(BaseModel):
+    feature: str
+    status: str
+    evidence: str
+
+
+class StrategicCoverageReportOut(BaseModel):
+    overall_result: str
+    matrix: list[StrategicFeatureCoverageOut]
+    next_steps: list[str]

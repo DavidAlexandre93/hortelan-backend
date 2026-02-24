@@ -37,6 +37,7 @@ app/
 - `GET /api/v1/telemetry/latest/{device_id}`
 - `GET /api/v1/commands/latest/{device_id}`
 - `GET /api/v1/devices/{device_id}/snapshot`
+- `GET /api/v1/strategic/coverage`
 
 ## Integração com frontend
 
@@ -111,6 +112,10 @@ Este projeto já está preparado para rodar como função Python (ASGI) na Verce
 
 - Defina serviços gerenciados para Redis, Kafka, MongoDB e banco relacional.
 - Em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o backend usa `sqlite` em `/tmp/hortelan.db` (ephemero, apenas fallback).
+
+## Análise de cobertura estratégica
+
+Foi adicionada uma análise objetiva de aderência do backend ao núcleo estratégico do produto em `docs/strategic-feature-gap-analysis.md`.
 
 ## Testes
 

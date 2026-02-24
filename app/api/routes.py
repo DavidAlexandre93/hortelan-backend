@@ -10,6 +10,8 @@ from app.api.schemas import (
     LedgerRecordIn,
     RequirementCoverageOut,
     RequirementDetailOut,
+    StrategicCoverageReportOut,
+    StrategicFeatureCoverageOut,
     TelemetryIn,
     TelemetryOut,
 )
@@ -145,6 +147,77 @@ REQUIREMENT_CATALOG: list[tuple[str, str]] = [
 
 IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '25.1'}
 
+STRATEGIC_COVERAGE_MATRIX: list[tuple[str, str, str]] = [
+    (
+        'Cadastro e gestão de hortas/plantas',
+        'Não atende ainda',
+        'Está catalogado como requisito (2.1 e 3.1), mas fora do conjunto marcado como implementado.',
+    ),
+    (
+        'Integração com sensores e dispositivos IoT',
+        'Atende parcialmente',
+        'Existem endpoints de telemetria/comandos e snapshot de dispositivo; requisitos 4.1, 4.4, 4.5 e 4.6 estão marcados como implementados.',
+    ),
+    (
+        'Dashboard de monitoramento',
+        'Não atende ainda (backend dedicado)',
+        'Requisitos de dashboard (5.x) existem no catálogo, mas não estão marcados como implementados.',
+    ),
+    (
+        'Automação por regras',
+        'Não atende ainda',
+        'Requisitos de automação (6.x) estão no catálogo sem marcação de implementação.',
+    ),
+    (
+        'Alertas e notificações',
+        'Não atende ainda',
+        'Requisitos (10.x) aparecem no catálogo, sem implementação marcada.',
+    ),
+    (
+        'Agenda de tarefas de cultivo',
+        'Não atende ainda',
+        'Requisitos (7.x) presentes no catálogo, não implementados.',
+    ),
+    (
+        'Recomendações inteligentes (e diagnóstico por foto em fase avançada)',
+        'Não atende ainda',
+        'Requisitos (9.x) existem no catálogo, mas sem implementação funcional marcada.',
+    ),
+    (
+        'Comunidade com compartilhamento de experiências',
+        'Não atende ainda',
+        'Requisitos de comunidade (12.x) no catálogo sem implementação.',
+    ),
+    (
+        'Templates/receitas de cultivo e automação',
+        'Não atende ainda',
+        'Requisitos (13.x) no catálogo sem implementação.',
+    ),
+    (
+        'Marketplace integrado com recomendações contextuais',
+        'Não atende ainda',
+        'Requisitos de loja/marketplace (14.x) no catálogo sem implementação.',
+    ),
+    (
+        'Gamificação/recompensas',
+        'Não atende ainda',
+        'Requisitos (15.x) no catálogo sem implementação.',
+    ),
+    (
+        'Backoffice/admin + suporte + LGPD',
+        'Atende parcialmente (escopo restrito)',
+        'Só há marcação para auditoria/logs (25.1) e catálogo de requisitos de admin/suporte/LGPD (18.x, 19.x, 21.3), ainda não marcados como implementados.',
+    ),
+]
+
+STRATEGIC_NEXT_STEPS = [
+    'Modelagem de domínio de horta/planta/tarefas para habilitar cadastro e agenda (2.x, 3.x, 7.x).',
+    'Motor de regras e alertas (6.x + 10.x), reaproveitando pipeline já existente de telemetria/comandos.',
+    'Camada de recomendações inicialmente baseada em regras (9.1/9.2), deixando visão computacional (9.3/9.4) como etapa posterior.',
+    'Módulos de produto (12.x, 13.x, 14.x, 15.x) com rollout incremental por domínio.',
+    'Backoffice/LGPD/suporte (18.x, 19.x, 21.x) com trilha de auditoria e consentimento evoluindo de 25.1.',
+]
+
 
 def _slugify_requirement(requirement_id: str, title: str) -> str:
     normalized = sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')
@@ -261,6 +334,24 @@ async def list_requirement_coverage() -> list[RequirementCoverageOut]:
         )
         for requirement_id, title in REQUIREMENT_CATALOG
     ]
+
+
+@router.get('/strategic/coverage', response_model=StrategicCoverageReportOut)
+async def strategic_coverage_report() -> StrategicCoverageReportOut:
+    return StrategicCoverageReportOut(
+        overall_result=(
+            'O backend atual não atende integralmente ao núcleo estratégico completo. '
+            'Ele está mais maduro no eixo de IoT/telemetria/comandos, com endpoints e casos de uso funcionando, '
+            'e tem um catálogo de requisitos que já sinaliza cobertura parcial. '
+            'Porém, a maioria dos módulos estratégicos de produto (comunidade, marketplace, gamificação, agenda, '
+            'recomendações e backoffice completo) ainda está em fase de estruturação.'
+        ),
+        matrix=[
+            StrategicFeatureCoverageOut(feature=feature, status=status, evidence=evidence)
+            for feature, status, evidence in STRATEGIC_COVERAGE_MATRIX
+        ],
+        next_steps=STRATEGIC_NEXT_STEPS,
+    )
 
 
 def _requirement_endpoint(requirement_id: str, title: str):
