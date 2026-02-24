@@ -13,10 +13,12 @@ Backend do **Hortelan** desenvolvido com **FastAPI + Python 3.11** em **Arquitet
 - [Pré-requisitos](#pré-requisitos)
 - [Configuração rápida](#configuração-rápida)
 - [Execução local](#execução-local)
-- [Documentação da API](#documentação-da-api)
+- [Documentação da API (Swagger/OpenAPI)](#documentação-da-api-swaggeropenapi)
 - [Endpoints disponíveis](#endpoints-disponíveis)
 - [Exemplos de uso com cURL](#exemplos-de-uso-com-curl)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Observabilidade e monitoramento](#observabilidade-e-monitoramento)
+- [Próximas implementações documentais](#próximas-implementações-documentais)
 - [Testes e qualidade](#testes-e-qualidade)
 - [Deploy na Vercel](#deploy-na-vercel)
 - [CI/CD](#cicd)
@@ -115,12 +117,26 @@ Health check:
 curl http://localhost:8000/health
 ```
 
-## Documentação da API
+## Documentação da API (Swagger/OpenAPI)
 
 Com o servidor em execução:
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+- **Swagger UI:** `http://localhost:8000/docs`
+- **ReDoc:** `http://localhost:8000/redoc`
+- **OpenAPI JSON:** `http://localhost:8000/openapi.json`
+
+### O que já está disponível
+
+- Geração automática de schema OpenAPI via FastAPI.
+- Contratos de request/response baseados em Pydantic.
+- Navegação interativa dos endpoints na Swagger UI para testes rápidos.
+
+### Melhorias recomendadas para implementar
+
+- Adicionar **tags e descrições funcionais por domínio** (Telemetry, Commands, Ledger etc.).
+- Documentar **exemplos de payload** diretamente nos schemas Pydantic.
+- Configurar **segurança no OpenAPI** (ex.: Bearer/JWT) quando a autenticação for adicionada.
+- Versionar documentação e publicar schema em pipeline (artifact ou portal interno).
 
 ## Endpoints disponíveis
 
@@ -129,6 +145,9 @@ Base path principal: `/api/v1`
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/health` | Verifica status da aplicação e ambiente |
+| GET | `/health/live` | Liveness probe |
+| GET | `/health/ready` | Readiness probe |
+| GET | `/metrics` | Métricas Prometheus |
 | POST | `/api/v1/telemetry` | Ingestão de telemetria |
 | GET | `/api/v1/telemetry` | Lista telemetria com filtros |
 | GET | `/api/v1/telemetry/latest/{device_id}` | Última telemetria por dispositivo |
@@ -171,18 +190,6 @@ curl -X POST "http://localhost:8000/api/v1/commands" \
 
 ### 3) Registrar no ledger
 
-- `GET /health`
-- `GET /health/live`
-- `GET /health/ready`
-- `GET /metrics`
-- `POST /api/v1/telemetry`
-- `POST /api/v1/commands`
-- `POST /api/v1/ledger`
-- `GET /api/v1/telemetry?limit=20&device_id=<opcional>`
-- `GET /api/v1/telemetry/latest/{device_id}`
-- `GET /api/v1/commands/latest/{device_id}`
-- `GET /api/v1/devices/{device_id}/snapshot`
-- `GET /api/v1/strategic/coverage`
 ```bash
 curl -X POST "http://localhost:8000/api/v1/ledger" \
   -H "Content-Type: application/json" \
@@ -194,9 +201,6 @@ curl -X POST "http://localhost:8000/api/v1/ledger" \
 
 ### 4) Obter snapshot por dispositivo
 
-1. Configure CORS em `cors_origins` (arquivo `.env`).
-2. O frontend pode enviar telemetria e comandos pelos endpoints REST.
-3. Para produção, adicione autenticação (JWT/Cognito).
 ```bash
 curl "http://localhost:8000/api/v1/devices/sensor-01/snapshot"
 ```
@@ -229,27 +233,29 @@ WEB3_RPC_URL=http://localhost:8545
 WEB3_CONTRACT_ADDRESS=
 WEB3_CONTRACT_ABI_JSON=[]
 WEB3_ACCOUNT_PRIVATE_KEY=
-```
 
+LOG_LEVEL=INFO
+ENABLE_METRICS=true
+```
 
 ## Observabilidade e monitoramento
 
-A API agora inclui uma camada base de observabilidade:
+A API inclui uma camada base de observabilidade:
 
 - **Logs estruturados em JSON** com `request_id`, `trace_id` e `span_id`.
 - **Métricas HTTP** em formato Prometheus (`/metrics`), incluindo total de requisições, requisições em andamento e latência média por rota.
 - **Health checks** separados para liveness (`/health/live`) e readiness (`/health/ready`).
 - **Headers de rastreabilidade** em todas as respostas: `x-request-id`, `x-trace-id`, `x-span-id`, `x-response-time-ms`.
 
-Variáveis de ambiente adicionais:
+## Próximas implementações documentais
 
-```env
-LOG_LEVEL=INFO
-ENABLE_METRICS=true
-```
+Itens sugeridos para evolução do README e da documentação técnica:
 
-## Gerenciamento de dependências com Poetry
-> Observação: em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o fallback é `sqlite` em `/tmp/hortelan.db`.
+1. **Guia de autenticação/autorização** (quando JWT/OAuth estiver ativo).
+2. **Coleção Postman/Insomnia** versionada e linkada no repositório.
+3. **Seção de troubleshooting** com erros comuns de Kafka, Redis e Mongo.
+4. **Guia de contribuição** com convenções de commit/testes e fluxo de branches.
+5. **Checklist de publicação da API** (OpenAPI validado + smoke tests + deploy).
 
 ## Testes e qualidade
 
@@ -266,6 +272,8 @@ python -m compileall app api tests
 ```
 
 ## Deploy na Vercel
+
+> Observação: em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o fallback é `sqlite` em `/tmp/hortelan.db`.
 
 O projeto já está preparado para deploy ASGI:
 

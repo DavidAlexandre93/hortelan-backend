@@ -47,6 +47,12 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = ''
     otel_exporter_timeout: int = 10
 
+    circuit_breaker_failure_rate_threshold: float = 50.0
+    circuit_breaker_sliding_window_size: int = 10
+    circuit_breaker_minimum_calls: int = 5
+    circuit_breaker_wait_duration_seconds: int = 30
+    circuit_breaker_permitted_half_open_calls: int = 2
+
 
 @lru_cache
 def get_settings() -> Settings:
