@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     web3_contract_abi_json: str = '[]'
     web3_account_private_key: str = ''
 
+    otel_enabled: bool = True
+    otel_service_name: str = 'hortelan-backend'
+    otel_service_version: str = '1.0.0'
+    otel_exporter_otlp_endpoint: str = ''
+    otel_exporter_timeout: int = 10
+
 
 @lru_cache
 def get_settings() -> Settings:

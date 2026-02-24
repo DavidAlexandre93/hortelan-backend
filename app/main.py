@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -7,13 +8,20 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
 from sqlalchemy import text
 
+from app.api.error_handlers import register_exception_handlers
 from app.api.routes import router
 from app.core.dependencies import container
+from app.core.observability import configure_telemetry
 from app.core.observability import ObservabilityMiddleware, configure_logging, metrics_registry
 from app.core.settings import get_settings
 
 settings = get_settings()
 logger = configure_logging(settings.log_level)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
+)
 
 
 @asynccontextmanager
@@ -66,6 +74,8 @@ app.add_middleware(
     allow_headers=['*'],
 )
 app.include_router(router)
+register_exception_handlers(app)
+configure_telemetry(app, settings)
 
 
 @app.get('/docs', include_in_schema=False)
