@@ -30,6 +30,9 @@ app/
 ## Endpoints
 
 - `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /metrics`
 - `POST /api/v1/telemetry`
 - `POST /api/v1/commands`
 - `POST /api/v1/ledger`
@@ -43,7 +46,7 @@ app/
 
 1. Configure CORS em `cors_origins` (arquivo `.env`).
 2. O frontend pode enviar telemetria e comandos pelos endpoints REST.
-3. Para produção, adicione autenticação (JWT/Cognito) e observabilidade.
+3. Para produção, adicione autenticação (JWT/Cognito).
 
 ## Variáveis de ambiente principais
 
@@ -68,6 +71,23 @@ WEB3_RPC_URL=http://localhost:8545
 WEB3_CONTRACT_ADDRESS=
 WEB3_CONTRACT_ABI_JSON=[]
 WEB3_ACCOUNT_PRIVATE_KEY=
+```
+
+
+## Observabilidade e monitoramento
+
+A API agora inclui uma camada base de observabilidade:
+
+- **Logs estruturados em JSON** com `request_id`, `trace_id` e `span_id`.
+- **Métricas HTTP** em formato Prometheus (`/metrics`), incluindo total de requisições, requisições em andamento e latência média por rota.
+- **Health checks** separados para liveness (`/health/live`) e readiness (`/health/ready`).
+- **Headers de rastreabilidade** em todas as respostas: `x-request-id`, `x-trace-id`, `x-span-id`, `x-response-time-ms`.
+
+Variáveis de ambiente adicionais:
+
+```env
+LOG_LEVEL=INFO
+ENABLE_METRICS=true
 ```
 
 ## Gerenciamento de dependências com Poetry
