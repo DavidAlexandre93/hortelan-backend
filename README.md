@@ -122,3 +122,16 @@ Foi adicionada uma análise objetiva de aderência do backend ao núcleo estrat�
 ```bash
 poetry run pytest -q
 ```
+
+## CI/CD
+
+O projeto agora possui pipeline de **CI/CD no GitHub Actions** com foco no que é essencial:
+
+- CI roda somente quando há mudanças de backend (`app/`, `api/`, `tests/` e arquivos de dependência).
+- Validações executadas: instalação de dependências, checagem de sintaxe e testes com `pytest`.
+- CD para Vercel acontece apenas em `push` na `main` e somente se os segredos estiverem configurados:
+  - `VERCEL_TOKEN`
+  - `VERCEL_ORG_ID`
+  - `VERCEL_PROJECT_ID`
+
+Também foi adicionado **Dependabot** para atualizar semanalmente dependências Python e GitHub Actions.
