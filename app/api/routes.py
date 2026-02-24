@@ -8,6 +8,8 @@ from app.api.schemas import (
     DeviceSnapshotOut,
     IrrigationCommandIn,
     LedgerRecordIn,
+    ProductModuleCoverageOut,
+    ProductReadinessReportOut,
     RequirementCoverageOut,
     RequirementDetailOut,
     StrategicCoverageReportOut,
@@ -147,6 +149,96 @@ REQUIREMENT_CATALOG: list[tuple[str, str]] = [
 
 IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '25.1'}
 
+PRODUCT_MODULES: list[dict[str, object]] = [
+    {
+        'slug': 'cadastro-login',
+        'title': 'Cadastro/login',
+        'stage': 'MVP',
+        'status': 'não atende',
+        'implemented': False,
+        'existing_endpoints': [],
+        'notes': 'Não há endpoints dedicados de autenticação/conta no backend atual.',
+    },
+    {
+        'slug': 'cadastro-horta-area-planta',
+        'title': 'Cadastro de horta/área/planta',
+        'stage': 'MVP',
+        'status': 'não atende',
+        'implemented': False,
+        'existing_endpoints': [],
+        'notes': 'Existe apenas catálogo de requisitos; faltam recursos CRUD de domínio de cultivo.',
+    },
+    {
+        'slug': 'dashboard-basico',
+        'title': 'Dashboard básico',
+        'stage': 'MVP',
+        'status': 'atende parcialmente',
+        'implemented': False,
+        'existing_endpoints': ['/api/v1/devices/{device_id}/snapshot', '/api/v1/telemetry/latest/{device_id}'],
+        'notes': 'Há dados de suporte ao dashboard, mas sem endpoints consolidados por negócio.',
+    },
+    {
+        'slug': 'integracao-iot-basica',
+        'title': 'Integração IoT básica (sensores principais)',
+        'stage': 'MVP',
+        'status': 'atende',
+        'implemented': True,
+        'existing_endpoints': ['/api/v1/telemetry', '/api/v1/commands', '/api/v1/devices/{device_id}/snapshot'],
+        'notes': 'Fluxo principal de telemetria/comando está funcional no backend.',
+    },
+    {
+        'slug': 'alertas-basicos',
+        'title': 'Alertas básicos',
+        'stage': 'MVP',
+        'status': 'não atende',
+        'implemented': False,
+        'existing_endpoints': [],
+        'notes': 'Não há pipeline/endpoints de alertas ativos.',
+    },
+    {
+        'slug': 'tarefas-lembretes',
+        'title': 'Tarefas e lembretes',
+        'stage': 'MVP',
+        'status': 'não atende',
+        'implemented': False,
+        'existing_endpoints': [],
+        'notes': 'Sem módulo de agenda ou rotinas de tarefas.',
+    },
+    {
+        'slug': 'automacao-simples',
+        'title': 'Automação simples (if/then)',
+        'stage': 'MVP',
+        'status': 'não atende',
+        'implemented': False,
+        'existing_endpoints': [],
+        'notes': 'Comandos manuais existem, porém sem mecanismo de regras if/then exposto.',
+    },
+    {
+        'slug': 'historico-graficos-basicos',
+        'title': 'Histórico e gráficos básicos',
+        'stage': 'MVP',
+        'status': 'atende parcialmente',
+        'implemented': False,
+        'existing_endpoints': ['/api/v1/telemetry'],
+        'notes': 'Histórico bruto existe; agregações para gráficos ainda não.',
+    },
+    {'slug': 'comunidade', 'title': 'Comunidade', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem endpoints sociais/comunidade.'},
+    {'slug': 'templates-cultivo-automacao', 'title': 'Templates de cultivo/automação', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem catálogo de templates aplicáveis.'},
+    {'slug': 'relatorios-avancados', 'title': 'Relatórios avançados', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem relatórios especializados/exportações avançadas.'},
+    {'slug': 'clima-regras-clima', 'title': 'Clima e regras com clima', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Integração meteorológica e regras climáticas não implementadas.'},
+    {'slug': 'multiusuario-permissoes', 'title': 'Multiusuário/permissões', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem RBAC e compartilhamento de hortas.'},
+    {'slug': 'notificacoes-avancadas', 'title': 'Notificações avançadas', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Não existe central/política de notificações avançadas.'},
+    {'slug': 'backoffice-robusto', 'title': 'Backoffice robusto', 'stage': 'V2', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem APIs administrativas dedicadas.'},
+    {'slug': 'diagnostico-por-foto', 'title': 'Diagnóstico por foto', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Não há inferência/computer vision integrado.'},
+    {'slug': 'assistente-inteligente', 'title': 'Assistente inteligente', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem endpoint de assistente conversacional/recomendações inteligentes.'},
+    {'slug': 'marketplace-completo', 'title': 'Marketplace completo', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem catálogo/carrinho/checkout no backend.'},
+    {'slug': 'recompensas-gamificacao-avancadas', 'title': 'Recompensas/gamificação avançadas', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem regras de pontos, badges e desafios.'},
+    {'slug': 'b2b-b2g', 'title': 'B2B/B2G', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Sem módulos corporativos/institucionais.'},
+    {'slug': 'modo-local-offline', 'title': 'Modo local/offline para confiança operacional (se aplicável ao hardware)', 'stage': 'V3', 'status': 'não atende', 'implemented': False, 'existing_endpoints': [], 'notes': 'Não há estratégia offline exposta via API para operação desconectada.'},
+]
+
+PRODUCT_MODULE_INDEX = {item['slug']: item for item in PRODUCT_MODULES}
+
 STRATEGIC_COVERAGE_MATRIX: list[tuple[str, str, str]] = [
     (
         'Cadastro e gestão de hortas/plantas',
@@ -239,6 +331,20 @@ def _build_requirement_detail(requirement_id: str, title: str) -> RequirementDet
         endpoint=f'/api/v1/requirements/{slug}',
         implemented=implemented,
         notes=note,
+    )
+
+
+def _build_product_module_detail(module: dict[str, object]) -> ProductModuleCoverageOut:
+    slug = str(module['slug'])
+    return ProductModuleCoverageOut(
+        slug=slug,
+        title=str(module['title']),
+        stage=str(module['stage']),
+        status=str(module['status']),
+        implemented=bool(module['implemented']),
+        existing_endpoints=list(module['existing_endpoints']),
+        endpoint=f'/api/v1/product/modules/{slug}',
+        notes=str(module['notes']),
     )
 
 
@@ -352,6 +458,36 @@ async def strategic_coverage_report() -> StrategicCoverageReportOut:
         ],
         next_steps=STRATEGIC_NEXT_STEPS,
     )
+
+
+@router.get('/product/readiness', response_model=ProductReadinessReportOut)
+async def product_readiness_report() -> ProductReadinessReportOut:
+    implemented_count = len([module for module in PRODUCT_MODULES if module['implemented']])
+    total = len(PRODUCT_MODULES)
+    return ProductReadinessReportOut(
+        summary=(
+            f'Cobertura validada para {total} módulos estratégicos. '
+            f'{implemented_count} atendidos, {total - implemented_count} pendentes ou parciais.'
+        ),
+        modules=[_build_product_module_detail(module) for module in PRODUCT_MODULES],
+    )
+
+
+@router.get('/product/modules/{module_slug}', response_model=ProductModuleCoverageOut)
+async def product_module_detail(module_slug: str) -> ProductModuleCoverageOut:
+    module = PRODUCT_MODULE_INDEX.get(module_slug)
+    if not module:
+        return ProductModuleCoverageOut(
+            slug=module_slug,
+            title='Módulo não catalogado',
+            stage='N/A',
+            status='não catalogado',
+            implemented=False,
+            existing_endpoints=[],
+            endpoint=f'/api/v1/product/modules/{module_slug}',
+            notes='Slug informado não existe no catálogo de módulos estratégicos.',
+        )
+    return _build_product_module_detail(module)
 
 
 def _requirement_endpoint(requirement_id: str, title: str):
