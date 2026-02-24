@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 from app.api.error_handlers import register_exception_handlers
 from app.api.routes import router
-from app.core.dependencies import container
+from app.core.dependencies import get_container
 from app.core.observability import configure_telemetry
 from app.core.observability import ObservabilityMiddleware, configure_logging, metrics_registry
 from app.core.settings import get_settings
@@ -26,6 +26,7 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    container = get_container()
     await container.relational_repo.init_schema()
     logger.info('application_started')
     yield
@@ -126,6 +127,7 @@ async def health_ready() -> dict[str, object]:
     checks: dict[str, str] = {'database': 'ok'}
     status = 'ready'
     try:
+        container = get_container()
         async with container.relational_repo.engine.connect() as conn:
             await conn.execute(text('SELECT 1'))
     except Exception:

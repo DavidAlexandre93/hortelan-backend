@@ -1,10 +1,14 @@
 import json
+import logging
 
 from web3 import Web3
 
 from app.core.settings import Settings
+from app.core.exceptions import InfrastructureError
 from app.domain.entities.models import LedgerRecord
 from app.domain.ports.interfaces import BlockchainPort
+
+logger = logging.getLogger(__name__)
 
 
 class Web3BlockchainAdapter(BlockchainPort):
@@ -22,19 +26,23 @@ class Web3BlockchainAdapter(BlockchainPort):
         if not self.contract or not self.settings.web3_account_private_key:
             return record
 
-        account = self.w3.eth.account.from_key(self.settings.web3_account_private_key)
-        nonce = self.w3.eth.get_transaction_count(account.address)
+        try:
+            account = self.w3.eth.account.from_key(self.settings.web3_account_private_key)
+            nonce = self.w3.eth.get_transaction_count(account.address)
 
-        tx = self.contract.functions.storeRecord(record.record_id, json.dumps(record.payload)).build_transaction(
-            {
-                'from': account.address,
-                'nonce': nonce,
-                'gas': 400000,
-                'gasPrice': self.w3.eth.gas_price,
-            }
-        )
-        signed = self.w3.eth.account.sign_transaction(tx, private_key=self.settings.web3_account_private_key)
-        tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+            tx = self.contract.functions.storeRecord(record.record_id, json.dumps(record.payload)).build_transaction(
+                {
+                    'from': account.address,
+                    'nonce': nonce,
+                    'gas': 400000,
+                    'gasPrice': self.w3.eth.gas_price,
+                }
+            )
+            signed = self.w3.eth.account.sign_transaction(tx, private_key=self.settings.web3_account_private_key)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.rawTransaction)
+        except Exception as exc:
+            logger.exception('Falha ao registrar evento no Web3')
+            raise InfrastructureError('Falha ao registrar evento em blockchain') from exc
 
         record.tx_hash = tx_hash.hex()
         record.confirmed = True

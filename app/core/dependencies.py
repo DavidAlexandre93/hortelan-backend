@@ -1,3 +1,6 @@
+from functools import lru_cache
+
+from app.application.services.coverage_service import CoverageService
 from app.application.use_cases.dispatch_command import DispatchIrrigationCommandUseCase
 from app.application.use_cases.ingest_telemetry import IngestTelemetryUseCase
 from app.application.use_cases.register_ledger import RegisterLedgerRecordUseCase
@@ -20,6 +23,7 @@ class Container:
         self.blockchain_adapter = Web3BlockchainAdapter(settings)
         self.relational_repo = SqlAlchemyTelemetryRepository(settings)
         self.document_repo = MongoTelemetryRepository(settings)
+        self.coverage_service = CoverageService()
 
         self.ingest_telemetry_use_case = IngestTelemetryUseCase(
             telemetry_publisher=self.telemetry_publisher,
@@ -36,4 +40,6 @@ class Container:
         )
 
 
-container = Container(get_settings())
+@lru_cache
+def get_container() -> Container:
+    return Container(get_settings())
