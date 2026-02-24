@@ -1,7 +1,10 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
 
 from app.api.routes import router
 from app.core.dependencies import container
@@ -17,7 +20,14 @@ async def lifespan(_: FastAPI):
     await container.telemetry_publisher.close()
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+favicon_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
+
+app = FastAPI(
+    title=settings.app_name,
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -26,6 +36,34 @@ app.add_middleware(
     allow_headers=['*'],
 )
 app.include_router(router)
+
+
+@app.get('/docs', include_in_schema=False)
+async def custom_swagger_ui_html() -> HTMLResponse:
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f'{app.title} - Swagger UI',
+        swagger_favicon_url='/favicon.svg',
+    )
+
+
+@app.get('/redoc', include_in_schema=False)
+async def redoc_html() -> HTMLResponse:
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f'{app.title} - ReDoc',
+        redoc_favicon_url='/favicon.svg',
+    )
+
+
+@app.get('/favicon.svg', include_in_schema=False)
+async def favicon() -> FileResponse:
+    return FileResponse(favicon_path, media_type='image/svg+xml')
+
+
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon_ico() -> FileResponse:
+    return FileResponse(favicon_path, media_type='image/svg+xml')
 
 
 @app.get('/health')
