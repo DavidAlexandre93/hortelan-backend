@@ -5,11 +5,23 @@ from pydantic import BaseModel, Field
 
 
 class TelemetryIn(BaseModel):
-    device_id: str
-    moisture: float = Field(ge=0, le=100)
-    temperature: float
-    ph: float
+    device_id: str = Field(description='Identificador único do dispositivo IoT.')
+    moisture: float = Field(ge=0, le=100, description='Umidade do solo em percentual (0 a 100).')
+    temperature: float = Field(description='Temperatura medida pelo sensor, em graus Celsius.')
+    ph: float = Field(description='pH estimado do solo.')
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {
+        'json_schema_extra': {
+            'example': {
+                'device_id': 'esp32-greenhouse-01',
+                'moisture': 45.2,
+                'temperature': 24.8,
+                'ph': 6.3,
+                'metadata': {'battery': 88, 'firmware': '1.0.4'},
+            }
+        }
+    }
 
 
 class TelemetryOut(BaseModel):
@@ -22,9 +34,22 @@ class TelemetryOut(BaseModel):
 
 
 class IrrigationCommandIn(BaseModel):
+    device_id: str = Field(description='Identificador do dispositivo que receberá o comando.')
+    action: str = Field(default='irrigate', description='Ação desejada no atuador.')
+    duration_seconds: int = Field(gt=0, le=7200, description='Duração do comando em segundos (máx. 2h).')
+
+    model_config = {
+        'json_schema_extra': {
+            'example': {'device_id': 'esp32-greenhouse-01', 'action': 'irrigate', 'duration_seconds': 120}
+        }
+    }
+
+
+class CommandSnapshotOut(BaseModel):
     device_id: str
-    action: str = Field(default='irrigate')
-    duration_seconds: int = Field(gt=0, le=7200)
+    action: str
+    duration_seconds: int
+    sent_at: str
 
 
 class DeviceSnapshotOut(BaseModel):
@@ -34,8 +59,17 @@ class DeviceSnapshotOut(BaseModel):
 
 
 class LedgerRecordIn(BaseModel):
-    record_id: str
-    payload: dict[str, Any]
+    record_id: str = Field(description='Identificador único do evento no ledger.')
+    payload: dict[str, Any] = Field(description='Conteúdo serializável do evento registrado.')
+
+    model_config = {
+        'json_schema_extra': {
+            'example': {
+                'record_id': 'evt-2026-02-telemetry-001',
+                'payload': {'type': 'telemetry_ingested', 'device_id': 'esp32-greenhouse-01'},
+            }
+        }
+    }
 
 
 class AckResponse(BaseModel):

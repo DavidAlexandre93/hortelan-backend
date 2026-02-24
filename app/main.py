@@ -24,6 +24,30 @@ favicon_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
 
 app = FastAPI(
     title=settings.app_name,
+    description=(
+        'API da plataforma Hortelan para integração IoT, ingestão de telemetria, envio de comandos '
+        'e rastreabilidade de cobertura estratégica do produto.'
+    ),
+    version='1.0.0',
+    contact={
+        'name': 'Equipe Hortelan',
+        'email': 'tech@hortelan.local',
+    },
+    license_info={
+        'name': 'MIT',
+        'url': 'https://opensource.org/licenses/MIT',
+    },
+    openapi_tags=[
+        {'name': 'telemetria', 'description': 'Operações para ingestão e consulta de medições de sensores.'},
+        {'name': 'comandos', 'description': 'Envio e consulta de comandos para atuadores/dispositivos.'},
+        {'name': 'dispositivos', 'description': 'Visão consolidada de estado por dispositivo.'},
+        {'name': 'ledger', 'description': 'Registro de eventos de auditoria e trilha operacional.'},
+        {
+            'name': 'cobertura estratégica',
+            'description': 'Endpoints analíticos de cobertura de requisitos e prontidão de módulos estratégicos.',
+        },
+        {'name': 'requirements', 'description': 'Detalhamento individual de requisitos do catálogo.'},
+    ],
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -66,6 +90,11 @@ async def favicon_ico() -> FileResponse:
     return FileResponse(favicon_path, media_type='image/svg+xml')
 
 
-@app.get('/health')
+@app.get(
+    '/health',
+    tags=['telemetria'],
+    summary='Healthcheck da API',
+    description='Endpoint de verificação rápida de disponibilidade da API e ambiente ativo.',
+)
 async def health() -> dict[str, str]:
     return {'status': 'ok', 'environment': settings.app_env}
