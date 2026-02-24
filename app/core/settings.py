@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     app_name: str = 'Hortelan Backend'
     app_env: str = 'development'
     app_port: int = 8000
+    log_level: str = 'INFO'
+    enable_metrics: bool = True
     cors_origins: list[str] = Field(
         default_factory=lambda: ['http://localhost:3000', 'http://localhost:5173']
     )

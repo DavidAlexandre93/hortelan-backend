@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 
 from app.api.schemas import (
     AckResponse,
+    CommandSnapshotOut,
     DeviceSnapshotOut,
     IrrigationCommandIn,
     LedgerRecordIn,
@@ -147,7 +148,7 @@ REQUIREMENT_CATALOG: list[tuple[str, str]] = [
     ('25.4', 'Backup e recuperação'),
 ]
 
-IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '25.1'}
+IMPLEMENTED_REQUIREMENTS = {'4.5', '4.6', '4.1', '4.4', '18.7', '25.1', '25.2'}
 
 PRODUCT_MODULES: list[dict[str, object]] = [
     {
@@ -348,7 +349,13 @@ def _build_product_module_detail(module: dict[str, object]) -> ProductModuleCove
     )
 
 
-@router.post('/telemetry', response_model=AckResponse)
+@router.post(
+    '/telemetry',
+    response_model=AckResponse,
+    tags=['telemetria'],
+    summary='Ingerir telemetria de um dispositivo',
+    description='Recebe uma leitura de sensores e persiste os dados para histórico, cache e processamento assíncrono.',
+)
 async def ingest_telemetry(payload: TelemetryIn) -> AckResponse:
     await container.ingest_telemetry_use_case.execute(
         TelemetryReading(
@@ -362,7 +369,13 @@ async def ingest_telemetry(payload: TelemetryIn) -> AckResponse:
     return AckResponse(status='telemetry_ingested', timestamp=datetime.utcnow())
 
 
-@router.get('/telemetry', response_model=list[TelemetryOut])
+@router.get(
+    '/telemetry',
+    response_model=list[TelemetryOut],
+    tags=['telemetria'],
+    summary='Listar leituras recentes de telemetria',
+    description='Retorna leituras recentes com suporte a filtro por dispositivo e limite de paginação simples.',
+)
 async def list_telemetry(
     limit: int = Query(default=20, ge=1, le=200),
     device_id: str | None = Query(default=None),
@@ -381,7 +394,13 @@ async def list_telemetry(
     ]
 
 
-@router.get('/telemetry/latest/{device_id}', response_model=TelemetryOut | None)
+@router.get(
+    '/telemetry/latest/{device_id}',
+    response_model=TelemetryOut | None,
+    tags=['telemetria'],
+    summary='Consultar última leitura em cache',
+    description='Busca a leitura de telemetria mais recente disponível no cache para um dispositivo específico.',
+)
 async def latest_telemetry(device_id: str) -> TelemetryOut | None:
     cached = await container.cache.get(f'telemetry:{device_id}')
     if not cached:
@@ -397,7 +416,13 @@ async def latest_telemetry(device_id: str) -> TelemetryOut | None:
     )
 
 
-@router.post('/commands', response_model=AckResponse)
+@router.post(
+    '/commands',
+    response_model=AckResponse,
+    tags=['comandos'],
+    summary='Despachar comando de irrigação',
+    description='Publica comando para o dispositivo IoT e registra o evento para rastreabilidade.',
+)
 async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
     await container.dispatch_irrigation_command_use_case.execute(
         IrrigationCommand(
@@ -409,12 +434,24 @@ async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
     return AckResponse(status='command_dispatched', timestamp=datetime.utcnow())
 
 
-@router.get('/commands/latest/{device_id}', response_model=dict)
-async def latest_command(device_id: str) -> dict:
+@router.get(
+    '/commands/latest/{device_id}',
+    response_model=CommandSnapshotOut | dict,
+    tags=['comandos'],
+    summary='Consultar último comando de um dispositivo',
+    description='Retorna o último comando disponível em cache. Quando inexistente, retorna objeto vazio.',
+)
+async def latest_command(device_id: str) -> CommandSnapshotOut | dict:
     return await container.cache.get(f'command:{device_id}') or {}
 
 
-@router.post('/ledger', response_model=AckResponse)
+@router.post(
+    '/ledger',
+    response_model=AckResponse,
+    tags=['ledger'],
+    summary='Registrar evento no ledger',
+    description='Registra payload estruturado no barramento de auditoria/ledger para rastreamento operacional.',
+)
 async def register_ledger(payload: LedgerRecordIn) -> AckResponse:
     await container.register_ledger_record_use_case.execute(
         LedgerRecord(record_id=payload.record_id, payload=payload.payload)
@@ -422,14 +459,26 @@ async def register_ledger(payload: LedgerRecordIn) -> AckResponse:
     return AckResponse(status='ledger_registered', timestamp=datetime.utcnow())
 
 
-@router.get('/devices/{device_id}/snapshot', response_model=DeviceSnapshotOut)
+@router.get(
+    '/devices/{device_id}/snapshot',
+    response_model=DeviceSnapshotOut,
+    tags=['dispositivos'],
+    summary='Obter snapshot consolidado do dispositivo',
+    description='Combina última telemetria e último comando em uma visão única do dispositivo.',
+)
 async def get_device_snapshot(device_id: str) -> DeviceSnapshotOut:
     telemetry = await container.cache.get(f'telemetry:{device_id}')
     command = await container.cache.get(f'command:{device_id}')
     return DeviceSnapshotOut(device_id=device_id, telemetry=telemetry, command=command)
 
 
-@router.get('/requirements', response_model=list[RequirementCoverageOut])
+@router.get(
+    '/requirements',
+    response_model=list[RequirementCoverageOut],
+    tags=['cobertura estratégica'],
+    summary='Listar catálogo de requisitos e cobertura',
+    description='Exibe todos os requisitos mapeados no backend e indica quais já possuem implementação ativa.',
+)
 async def list_requirement_coverage() -> list[RequirementCoverageOut]:
     return [
         RequirementCoverageOut(
@@ -442,7 +491,13 @@ async def list_requirement_coverage() -> list[RequirementCoverageOut]:
     ]
 
 
-@router.get('/strategic/coverage', response_model=StrategicCoverageReportOut)
+@router.get(
+    '/strategic/coverage',
+    response_model=StrategicCoverageReportOut,
+    tags=['cobertura estratégica'],
+    summary='Gerar relatório de cobertura estratégica',
+    description='Apresenta avaliação executiva da aderência do backend às frentes estratégicas do produto.',
+)
 async def strategic_coverage_report() -> StrategicCoverageReportOut:
     return StrategicCoverageReportOut(
         overall_result=(
@@ -460,7 +515,13 @@ async def strategic_coverage_report() -> StrategicCoverageReportOut:
     )
 
 
-@router.get('/product/readiness', response_model=ProductReadinessReportOut)
+@router.get(
+    '/product/readiness',
+    response_model=ProductReadinessReportOut,
+    tags=['cobertura estratégica'],
+    summary='Gerar relatório de prontidão do produto',
+    description='Consolida módulos estratégicos e seu estado atual de implementação no backend.',
+)
 async def product_readiness_report() -> ProductReadinessReportOut:
     implemented_count = len([module for module in PRODUCT_MODULES if module['implemented']])
     total = len(PRODUCT_MODULES)
@@ -473,7 +534,13 @@ async def product_readiness_report() -> ProductReadinessReportOut:
     )
 
 
-@router.get('/product/modules/{module_slug}', response_model=ProductModuleCoverageOut)
+@router.get(
+    '/product/modules/{module_slug}',
+    response_model=ProductModuleCoverageOut,
+    tags=['cobertura estratégica'],
+    summary='Detalhar cobertura de um módulo estratégico',
+    description='Retorna os dados de cobertura para o slug de módulo informado.',
+)
 async def product_module_detail(module_slug: str) -> ProductModuleCoverageOut:
     module = PRODUCT_MODULE_INDEX.get(module_slug)
     if not module:
