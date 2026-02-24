@@ -9,6 +9,12 @@ Revisão estática do backend com foco em:
 - riscos arquiteturais e operacionais;
 - ações priorizadas de melhoria.
 
+## Ações aplicadas nesta revisão
+
+1. **Resiliência em observabilidade**: a configuração de telemetria agora verifica presença das dependências OpenTelemetry antes de inicializar, evitando falha em import no bootstrap da aplicação.
+2. **Clean Code/SRP em observabilidade**: reorganização de imports e responsabilidades no módulo `observability`, removendo duplicações e melhorando legibilidade.
+3. **Tratamento de erro desacoplado de vendor**: `error_handlers` passou a operar com fallback quando OpenTelemetry não está disponível, preservando rastreabilidade mínima sem acoplar o runtime ao pacote opcional.
+
 ## Diagnóstico executivo
 
 **Conclusão geral:** o projeto está bem encaminhado para Hexagonal e possui boa separação de camadas (`domain`, `application`, `infrastructure`, `api`, `core`), porém ainda há pontos críticos de robustez e de responsabilidade única, especialmente na camada de API e no tratamento de falhas em adapters.
