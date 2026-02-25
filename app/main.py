@@ -34,7 +34,7 @@ async def lifespan(_: FastAPI):
     logger.info('application_stopped')
 
 
-favicon_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
+favicon_svg_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
 
 app = FastAPI(
     title=settings.app_name,
@@ -99,12 +99,12 @@ async def redoc_html() -> HTMLResponse:
 
 @app.get('/favicon.svg', include_in_schema=False)
 async def favicon() -> FileResponse:
-    return FileResponse(favicon_path, media_type='image/svg+xml')
+    return FileResponse(favicon_svg_path, media_type='image/svg+xml')
 
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon_ico() -> FileResponse:
-    return FileResponse(favicon_path, media_type='image/svg+xml')
+    return FileResponse(favicon_svg_path, media_type='image/svg+xml')
 
 
 @app.get(
