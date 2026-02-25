@@ -29,7 +29,10 @@ version = "0.1.0"
 description = "Backend do Hortelan com FastAPI e arquitetura hexagonal"
 authors = ["Hortelan Team"]
 readme = "README.md"
-package-mode = false
+packages = [
+  { include = "app" },
+  { include = "api" },
+]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
