@@ -1,7 +1,7 @@
 import asyncio
 
 from app.core.observability import metrics_registry
-from app.main import health_live, health_ready, metrics
+from app.main import health_live, health_ready, metrics, root_status
 
 
 def test_health_readiness_and_liveness_endpoints():
@@ -11,6 +11,12 @@ def test_health_readiness_and_liveness_endpoints():
     assert live['status'] == 'alive'
     assert ready['status'] in {'ready', 'degraded'}
     assert ready['checks']['database'] in {'ok', 'error'}
+
+
+def test_root_status_message_is_available_in_english():
+    response = asyncio.run(root_status())
+
+    assert response['message'] == 'Service available'
 
 
 def test_metrics_output_contains_http_measurements():

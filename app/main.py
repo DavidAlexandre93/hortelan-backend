@@ -107,6 +107,11 @@ async def favicon_ico() -> FileResponse:
     return FileResponse(favicon_svg_path, media_type='image/svg+xml')
 
 
+@app.get('/', include_in_schema=False)
+async def root_status() -> dict[str, str]:
+    return {'message': 'Service available'}
+
+
 @app.get(
     '/health',
     tags=['telemetria'],
