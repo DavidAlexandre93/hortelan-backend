@@ -42,7 +42,7 @@ redis = "5.0.8"
 web3 = "7.2.0"
 sqlalchemy = "2.0.35"
 aiosqlite = "0.20.0"
-motor = "3.6.0"
+motor = "3.7.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "8.3.3"
