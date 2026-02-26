@@ -36,7 +36,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
-fastapi = "0.115.0"
+fastapi = "0.133.0"
 uvicorn = { version = "0.30.6", extras = ["standard"] }
 pydantic-settings = "2.5.2"
 aiokafka = "0.11.0"
