@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from enum import StrEnum
+from enum import Enum
 
 
-class CircuitState(StrEnum):
+class CircuitState(str, Enum):
     CLOSED = 'closed'
     OPEN = 'open'
     HALF_OPEN = 'half_open'

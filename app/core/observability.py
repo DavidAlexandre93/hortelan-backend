@@ -5,6 +5,7 @@ import logging
 import time
 import uuid
 from collections import defaultdict
+from collections import deque
 from contextvars import ContextVar
 from threading import Lock
 from typing import Any, Callable
@@ -141,10 +142,30 @@ class MetricsRegistry:
 metrics_registry = MetricsRegistry()
 
 
+class RateLimiter:
+    def __init__(self, limit_per_minute: int) -> None:
+        self.limit_per_minute = limit_per_minute
+        self._lock = Lock()
+        self._requests: dict[str, deque[float]] = defaultdict(deque)
+
+    def allow(self, key: str) -> bool:
+        now = time.time()
+        window_start = now - 60
+        with self._lock:
+            queue = self._requests[key]
+            while queue and queue[0] < window_start:
+                queue.popleft()
+            if len(queue) >= self.limit_per_minute:
+                return False
+            queue.append(now)
+        return True
+
+
 class ObservabilityMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: Any, logger: logging.Logger):
+    def __init__(self, app: Any, logger: logging.Logger, settings: Settings):
         super().__init__(app)
         self.logger = logger
+        self.rate_limiter = RateLimiter(settings.rate_limit_per_minute)
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         request_id = request.headers.get('x-request-id', str(uuid.uuid4()))
@@ -154,6 +175,13 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         request_id_ctx.set(request_id)
         trace_id_ctx.set(trace_id)
         span_id_ctx.set(span_id)
+
+        client_host = request.client.host if request.client else 'unknown'
+        if not self.rate_limiter.allow(client_host):
+            response = Response('rate limit exceeded', status_code=429)
+            response.headers['Retry-After'] = '60'
+            return response
+
         metrics_registry.track_start()
 
         started = time.perf_counter()
@@ -176,6 +204,10 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
         response.headers['x-trace-id'] = trace_id
         response.headers['x-span-id'] = span_id
         response.headers['x-response-time-ms'] = f'{elapsed * 1000:.2f}'
+        response.headers['x-content-type-options'] = 'nosniff'
+        response.headers['x-frame-options'] = 'DENY'
+        response.headers['referrer-policy'] = 'no-referrer'
+        response.headers['x-xss-protection'] = '0'
 
         self.logger.info(
             'request_finished',

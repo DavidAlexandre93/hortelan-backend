@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,11 +16,6 @@ from app.core.settings import get_settings
 
 settings = get_settings()
 logger = configure_logging(settings.log_level)
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
-)
 
 
 @asynccontextmanager
@@ -66,7 +60,7 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
 )
-app.add_middleware(ObservabilityMiddleware, logger=logger)
+app.add_middleware(ObservabilityMiddleware, logger=logger, settings=settings)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

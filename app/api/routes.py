@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.api.schemas import (
     AckResponse,
@@ -26,6 +26,7 @@ from app.application.services.coverage_service import (
     _slugify_requirement,
 )
 from app.core.dependencies import get_container
+from app.core.security import require_api_key
 from app.domain.entities.models import IrrigationCommand, LedgerRecord, TelemetryReading
 
 router = APIRouter(prefix='/api/v1')
@@ -76,7 +77,7 @@ async def latest_telemetry(device_id: str) -> TelemetryOut | None:
     return TelemetryOut.model_validate(cached)
 
 
-@router.post('/commands', response_model=AckResponse, tags=['comandos'])
+@router.post('/commands', response_model=AckResponse, tags=['comandos'], dependencies=[Depends(require_api_key)])
 async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
     await _container().dispatch_irrigation_command_use_case.execute(
         IrrigationCommand(
@@ -101,7 +102,7 @@ async def latest_command(device_id: str) -> CommandSnapshotOut | None:
     return CommandSnapshotOut.model_validate(command_payload)
 
 
-@router.post('/ledger', response_model=AckResponse, tags=['ledger'])
+@router.post('/ledger', response_model=AckResponse, tags=['ledger'], dependencies=[Depends(require_api_key)])
 async def register_ledger(payload: LedgerRecordIn) -> AckResponse:
     await _container().register_ledger_record_use_case.execute(
         LedgerRecord(record_id=payload.record_id, payload=payload.payload)

@@ -6,6 +6,8 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from app.core.exceptions import ApiError, InfrastructureError, TransientIntegrationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -51,6 +53,54 @@ def _record_exception_on_span(exc: Exception) -> None:
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(ApiError)
+    async def api_error_handler(request: Request, exc: ApiError) -> JSONResponse:
+        trace_context = _current_trace_context()
+        body: dict[str, Any] = {
+            'error': {
+                'code': exc.code,
+                'message': exc.message,
+                'details': exc.details,
+                'path': request.url.path,
+                'method': request.method,
+                'trace_id': trace_context['trace_id'],
+                'span_id': trace_context['span_id'],
+            }
+        }
+        return JSONResponse(status_code=exc.status_code, content=body)
+
+    @app.exception_handler(TransientIntegrationError)
+    async def transient_integration_handler(request: Request, exc: TransientIntegrationError) -> JSONResponse:
+        trace_context = _current_trace_context()
+        body: dict[str, Any] = {
+            'error': {
+                'code': 'INTEGRATION_TEMPORARY_FAILURE',
+                'message': str(exc),
+                'details': {},
+                'path': request.url.path,
+                'method': request.method,
+                'trace_id': trace_context['trace_id'],
+                'span_id': trace_context['span_id'],
+            }
+        }
+        return JSONResponse(status_code=503, content=body)
+
+    @app.exception_handler(InfrastructureError)
+    async def infrastructure_handler(request: Request, exc: InfrastructureError) -> JSONResponse:
+        trace_context = _current_trace_context()
+        body: dict[str, Any] = {
+            'error': {
+                'code': 'INFRASTRUCTURE_FAILURE',
+                'message': str(exc),
+                'details': {},
+                'path': request.url.path,
+                'method': request.method,
+                'trace_id': trace_context['trace_id'],
+                'span_id': trace_context['span_id'],
+            }
+        }
+        return JSONResponse(status_code=502, content=body)
+
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
         trace_context = _current_trace_context()
@@ -68,11 +118,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
         body: dict[str, Any] = {
-            'detail': 'Erro interno inesperado.',
-            'error_type': type(exc).__name__,
-            'path': request.url.path,
-            'method': request.method,
-            'trace_id': trace_context['trace_id'],
-            'span_id': trace_context['span_id'],
+            'error': {
+                'code': 'INTERNAL_SERVER_ERROR',
+                'message': 'Erro interno inesperado.',
+                'details': {'error_type': type(exc).__name__},
+                'path': request.url.path,
+                'method': request.method,
+                'trace_id': trace_context['trace_id'],
+                'span_id': trace_context['span_id'],
+            }
         }
         return JSONResponse(status_code=500, content=body)

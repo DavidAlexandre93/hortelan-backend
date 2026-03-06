@@ -1,11 +1,12 @@
+import asyncio
 import json
 import logging
 
 import boto3
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
-from app.core.settings import Settings
 from app.core.exceptions import InfrastructureError
+from app.core.settings import Settings
 from app.domain.entities.models import IrrigationCommand
 from app.domain.ports.interfaces import DeviceCommandPort
 
@@ -40,15 +41,20 @@ class AwsIotCoreAdapter(DeviceCommandPort):
                 'created_at': command.created_at.isoformat(),
             }
         )
+
         try:
             self._circuit_breaker.call_permitted()
-            self.client.publish(topic=topic, qos=1, payload=payload)
+        except CircuitBreakerOpenError:
+            raise InfrastructureError('Circuit breaker aberto para AWS IoT')
+
+        try:
+            await asyncio.wait_for(
+                asyncio.to_thread(self.client.publish, topic=topic, qos=1, payload=payload),
+                timeout=self.settings.external_timeout_seconds,
+            )
         except Exception as exc:
+            self._circuit_breaker.on_failure()
             logger.exception('Falha ao enviar comando para AWS IoT')
             raise InfrastructureError('Falha ao publicar comando no AWS IoT') from exc
+        else:
             self._circuit_breaker.on_success()
-        except CircuitBreakerOpenError:
-            return
-        except Exception:
-            self._circuit_breaker.on_failure()
-            return
