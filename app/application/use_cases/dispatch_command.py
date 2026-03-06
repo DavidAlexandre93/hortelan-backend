@@ -1,30 +1,9 @@
-import logging
+"""Compat: mantenha import legado.
 
-from app.core.exceptions import TransientIntegrationError
-from app.domain.entities.models import IrrigationCommand
-from app.domain.ports.interfaces import CachePort, DeviceCommandPort
+Novo caminho recomendado:
+app.application.use_cases.iot.dispatch_irrigation_command_use_case.DispatchIrrigationCommandUseCase
+"""
 
-logger = logging.getLogger(__name__)
+from app.application.use_cases.iot.dispatch_irrigation_command_use_case import DispatchIrrigationCommandUseCase
 
-
-class DispatchIrrigationCommandUseCase:
-    def __init__(self, command_port: DeviceCommandPort, cache: CachePort) -> None:
-        self.command_port = command_port
-        self.cache = cache
-
-    async def execute(self, command: IrrigationCommand) -> None:
-        await self.command_port.send_command(command)
-
-        try:
-            await self.cache.set(
-                f'command:{command.device_id}',
-                {
-                    'device_id': command.device_id,
-                    'action': command.action,
-                    'duration_seconds': command.duration_seconds,
-                    'sent_at': command.created_at.isoformat(),
-                },
-                ttl_seconds=120,
-            )
-        except TransientIntegrationError:
-            logger.warning('Falha transitória ao atualizar cache de comando.')
+__all__ = ['DispatchIrrigationCommandUseCase']
