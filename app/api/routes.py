@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 
-from app.api.schemas import (
+from app.api.contracts import (
     AckResponse,
     CommandSnapshotOut,
     DeviceSnapshotOut,

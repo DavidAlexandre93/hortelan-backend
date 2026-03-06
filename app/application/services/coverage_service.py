@@ -1,6 +1,6 @@
 from re import sub
 
-from app.api.schemas import (
+from app.api.contracts import (
     ProductModuleCoverageOut,
     ProductReadinessReportOut,
     RequirementCoverageOut,

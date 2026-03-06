@@ -1,10 +1,9 @@
-from app.domain.entities.models import LedgerRecord
-from app.domain.ports.interfaces import BlockchainPort
+"""Compat: mantenha import legado.
 
+Novo caminho recomendado:
+app.application.use_cases.governance.register_ledger_record_use_case.RegisterLedgerRecordUseCase
+"""
 
-class RegisterLedgerRecordUseCase:
-    def __init__(self, blockchain_port: BlockchainPort) -> None:
-        self.blockchain_port = blockchain_port
+from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
 
-    async def execute(self, record: LedgerRecord) -> LedgerRecord:
-        return await self.blockchain_port.write_record(record)
+__all__ = ['RegisterLedgerRecordUseCase']

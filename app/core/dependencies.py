@@ -1,9 +1,9 @@
 from functools import lru_cache
 
 from app.application.services.coverage_service import CoverageService
-from app.application.use_cases.dispatch_command import DispatchIrrigationCommandUseCase
-from app.application.use_cases.ingest_telemetry import IngestTelemetryUseCase
-from app.application.use_cases.register_ledger import RegisterLedgerRecordUseCase
+from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
+from app.application.use_cases.iot.dispatch_irrigation_command_use_case import DispatchIrrigationCommandUseCase
+from app.application.use_cases.iot.ingest_telemetry_use_case import IngestTelemetryUseCase
 from app.core.settings import Settings, get_settings
 from app.infrastructure.adapters.aws_iot_adapter import AwsIotCoreAdapter
 from app.infrastructure.adapters.kafka_adapter import KafkaTelemetryAdapter

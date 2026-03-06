@@ -67,10 +67,13 @@ O projeto segue **Hexagonal Architecture** para reduzir acoplamento com framewor
 ```text
 app/
   api/
-    routes.py            # Endpoints FastAPI
-    schemas.py           # Contratos de entrada/saída
+    routes.py            # Façade de compatibilidade + roteador principal
+    contracts/           # Schemas por contexto (telemetry, commands, ledger...)
+    schemas.py           # Façade legada para contratos da API
   application/
-    use_cases/           # Casos de uso
+    use_cases/
+      iot/               # Casos de uso de telemetria/comandos
+      governance/        # Casos de uso de trilha/auditoria (ledger)
   core/
     settings.py          # Configurações por ambiente
     dependencies.py      # Container de dependências
