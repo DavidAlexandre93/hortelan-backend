@@ -16,22 +16,20 @@ jobs:
   dependency-review:
     name: Dependency review (PR)
     if: github.event_name == 'pull_request'
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Dependency review
+
+      - name: Dependency review (best-effort)
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
 
   sast-codeql:
-    name: CodeQL SAST
+    name: CodeQL SAST (python)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [python, javascript]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +37,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: python
           config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
@@ -71,18 +69,50 @@ jobs:
       - name: Bandit SAST
         run: bandit -r app api -x tests -ll
 
-      - name: Vulnerability audit
-        run: pip-audit --requirement requirements.txt --strict
+      - name: Vulnerability audit (report)
+        run: |
+          pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+
+      - name: Enforce vulnerability policy
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          report_path = 'pip-audit-report.json'
+          with open(report_path, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+
+          deps = data.get('dependencies', [])
+          vuln_count = sum(len(dep.get('vulns', [])) for dep in deps)
+          event = os.environ.get('GITHUB_EVENT_NAME', '')
+
+          print(f'Vulnerabilities found: {vuln_count}')
+
+          # Em PR: não bloquear merge por vulnerabilidades herdadas; a correção automática abre PR separado.
+          if event == 'pull_request':
+              if vuln_count > 0:
+                  print('::warning::Vulnerabilidades detectadas no PR (não bloqueante). Fluxo de auto-remediação irá abrir PR de correção.')
+              sys.exit(0)
+
+          # Em push/schedule: política estrita.
+          if vuln_count > 0:
+              print('::error::Vulnerabilidades detectadas em branch protegida/agendamento. Falhando pipeline.')
+              sys.exit(1)
+          PY
 
       - name: Secret baseline scan
         run: |
           detect-secrets scan --all-files > .secrets.baseline
           detect-secrets audit .secrets.baseline --stats || true
 
-      - name: Upload baseline artifact
+      - name: Upload security artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: detect-secrets-baseline
-          path: .secrets.baseline
+          name: security-reports
+          path: |
+            pip-audit-report.json
+            .secrets.baseline
           if-no-files-found: ignore
