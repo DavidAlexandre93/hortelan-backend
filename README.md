@@ -322,13 +322,29 @@ Passos:
 
 ## CI/CD
 
-Pipeline GitHub Actions com foco em mudanças de backend:
+Este repositório agora possui uma malha de CI/CD e segurança em múltiplas camadas:
 
-- detecta mudanças em `app/`, `api/`, `tests/` e arquivos-chave;
-- instala dependências;
-- valida sintaxe com `compileall`;
-- executa testes (`pytest -q`);
-- deploy para Vercel no `push` em `main` quando segredos estão configurados.
+- **`Backend CI/CD Ultra`** (`.github/workflows/cicd.yml`)
+  - filtro de mudanças para otimizar execução;
+  - quality gates com matrix Python 3.11/3.12;
+  - `ruff` (lint + format check), `mypy`, `pytest` com cobertura mínima de 80%;
+  - validação de empacotamento (`python -m build`);
+  - deploy para Vercel no `push` para `main` quando segredos estão configurados.
+- **`Security Hardening`** (`.github/workflows/security-hardening.yml`)
+  - dependency review em PRs (executa automaticamente quando Dependency Graph estiver habilitado no repositório);
+  - CodeQL SAST para Python;
+  - `bandit`, `pip-audit` e varredura de segredos com `detect-secrets` (em PR, vulnerabilidades conhecidas geram warning; em push/schedule, bloqueiam o pipeline).
+- **`Auto Security Remediation PR`** (`.github/workflows/auto-security-pr.yml`)
+  - execução agendada e manual;
+  - tenta corrigir vulnerabilidades automaticamente com `pip-audit --fix`;
+  - roda testes e abre PR automático com `peter-evans/create-pull-request` quando houver mudanças.
+- **`Auto Bugfix Remediation PR`** (`.github/workflows/auto-bugfix-pr.yml`)
+  - execução agendada e manual;
+  - aplica autofixes seguros de bugs potenciais via `ruff --fix`;
+  - revalida com testes e abre PR automático quando houver mudanças.
+- **Dependabot avançado** (`.github/dependabot.yml`)
+  - atualização diária de dependências Python e GitHub Actions;
+  - agrupamento por stack para reduzir ruído e acelerar revisão.
 
 Segredos esperados para deploy:
 
