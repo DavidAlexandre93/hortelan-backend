@@ -22,7 +22,7 @@ class DispatchIrrigationCommandUseCase:
                     'device_id': command.device_id,
                     'action': command.action,
                     'duration_seconds': command.duration_seconds,
-                    'created_at': command.created_at.isoformat(),
+                    'sent_at': command.created_at.isoformat(),
                 },
                 ttl_seconds=120,
             )

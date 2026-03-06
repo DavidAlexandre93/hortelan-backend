@@ -68,9 +68,12 @@ async def list_telemetry(
     ]
 
 
-@router.get('/telemetry/latest/{device_id}', response_model=TelemetryOut | dict, tags=['telemetria'])
-async def latest_telemetry(device_id: str) -> TelemetryOut | dict:
-    return await _container().cache.get(f'telemetry:{device_id}') or {}
+@router.get('/telemetry/latest/{device_id}', response_model=TelemetryOut | None, tags=['telemetria'])
+async def latest_telemetry(device_id: str) -> TelemetryOut | None:
+    cached = await _container().cache.get(f'telemetry:{device_id}')
+    if not cached:
+        return None
+    return TelemetryOut.model_validate(cached)
 
 
 @router.post('/commands', response_model=AckResponse, tags=['comandos'])
@@ -85,9 +88,17 @@ async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
     return AckResponse(status='command_dispatched', timestamp=datetime.utcnow())
 
 
-@router.get('/commands/latest/{device_id}', response_model=CommandSnapshotOut | dict, tags=['comandos'])
-async def latest_command(device_id: str) -> CommandSnapshotOut | dict:
-    return await _container().cache.get(f'command:{device_id}') or {}
+@router.get('/commands/latest/{device_id}', response_model=CommandSnapshotOut | None, tags=['comandos'])
+async def latest_command(device_id: str) -> CommandSnapshotOut | None:
+    cached = await _container().cache.get(f'command:{device_id}')
+    if not cached:
+        return None
+
+    command_payload = dict(cached)
+    if 'sent_at' not in command_payload and 'created_at' in command_payload:
+        command_payload['sent_at'] = command_payload.pop('created_at')
+
+    return CommandSnapshotOut.model_validate(command_payload)
 
 
 @router.post('/ledger', response_model=AckResponse, tags=['ledger'])
