@@ -1,10 +1,12 @@
 import json
 import logging
+import time
 from dataclasses import asdict
 
 from aiokafka import AIOKafkaProducer
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.observability import metrics_registry
 from app.core.exceptions import TransientIntegrationError
 from app.core.settings import Settings
 from app.domain.entities.models import TelemetryReading
@@ -56,14 +58,17 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
             raise TransientIntegrationError('Producer Kafka indisponível')
 
         payload = json.dumps(asdict(reading), default=str).encode('utf-8')
+        started = time.perf_counter()
         try:
             await producer.send_and_wait(self.settings.kafka_topic_telemetry, payload)
         except Exception as exc:
             self._circuit_breaker.on_failure()
+            metrics_registry.track_external_call('kafka.publish_telemetry', time.perf_counter() - started, ok=False)
             logger.exception('Falha ao publicar telemetria no Kafka')
             raise TransientIntegrationError('Falha ao publicar telemetria no Kafka') from exc
         else:
             self._circuit_breaker.on_success()
+            metrics_registry.track_external_call('kafka.publish_telemetry', time.perf_counter() - started, ok=True)
 
     async def close(self) -> None:
         if self._producer:

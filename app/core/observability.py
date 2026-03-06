@@ -4,8 +4,8 @@ import json
 import logging
 import time
 import uuid
-from collections import defaultdict
-from collections import deque
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
 from contextvars import ContextVar
 from threading import Lock
 from typing import Any, Callable
@@ -96,11 +96,25 @@ class JsonFormatter(logging.Formatter):
 
 
 class MetricsRegistry:
+    @dataclass
+    class _OperationStats:
+        total_seconds: float = 0.0
+        count: int = 0
+        errors: int = 0
+        samples: deque[float] = field(default_factory=lambda: deque(maxlen=2048))
+
     def __init__(self) -> None:
         self._lock = Lock()
+        self._started_at = time.time()
         self._inflight = 0
         self._request_counter: dict[tuple[str, str, int], int] = defaultdict(int)
-        self._latency_counter: dict[tuple[str, str], tuple[float, int]] = defaultdict(lambda: (0.0, 0))
+        self._latency_counter: dict[tuple[str, str], MetricsRegistry._OperationStats] = defaultdict(
+            MetricsRegistry._OperationStats
+        )
+        self._db_counter: dict[str, MetricsRegistry._OperationStats] = defaultdict(MetricsRegistry._OperationStats)
+        self._external_counter: dict[str, MetricsRegistry._OperationStats] = defaultdict(
+            MetricsRegistry._OperationStats
+        )
 
     def track_start(self) -> None:
         with self._lock:
@@ -110,10 +124,41 @@ class MetricsRegistry:
         with self._lock:
             self._inflight = max(0, self._inflight - 1)
             self._request_counter[(method, path, status_code)] += 1
-            total, count = self._latency_counter[(method, path)]
-            self._latency_counter[(method, path)] = (total + elapsed_seconds, count + 1)
+            stats = self._latency_counter[(method, path)]
+            stats.total_seconds += elapsed_seconds
+            stats.count += 1
+            stats.samples.append(elapsed_seconds)
+            if status_code >= 500:
+                stats.errors += 1
+
+    def track_db_query(self, operation: str, elapsed_seconds: float, ok: bool = True) -> None:
+        with self._lock:
+            stats = self._db_counter[operation]
+            stats.total_seconds += elapsed_seconds
+            stats.count += 1
+            stats.samples.append(elapsed_seconds)
+            if not ok:
+                stats.errors += 1
+
+    def track_external_call(self, integration: str, elapsed_seconds: float, ok: bool = True) -> None:
+        with self._lock:
+            stats = self._external_counter[integration]
+            stats.total_seconds += elapsed_seconds
+            stats.count += 1
+            stats.samples.append(elapsed_seconds)
+            if not ok:
+                stats.errors += 1
+
+    @staticmethod
+    def _quantile(samples: deque[float], q: float) -> float:
+        if not samples:
+            return 0.0
+        ordered = sorted(samples)
+        idx = max(0, min(len(ordered) - 1, int(q * (len(ordered) - 1))))
+        return ordered[idx]
 
     def render_prometheus(self) -> str:
+        uptime = max(1e-6, time.time() - self._started_at)
         lines = [
             '# HELP http_server_requests_total Total de requisições HTTP processadas.',
             '# TYPE http_server_requests_total counter',
@@ -130,11 +175,62 @@ class MetricsRegistry:
                 f'http_server_inflight_requests {self._inflight}',
                 '# HELP http_server_request_duration_seconds_avg Latência média das requisições por rota.',
                 '# TYPE http_server_request_duration_seconds_avg gauge',
+                '# HELP http_server_request_duration_seconds_p95 Latência p95 das requisições por rota.',
+                '# TYPE http_server_request_duration_seconds_p95 gauge',
+                '# HELP http_server_request_duration_seconds_p99 Latência p99 das requisições por rota.',
+                '# TYPE http_server_request_duration_seconds_p99 gauge',
+                '# HELP http_server_request_error_rate Taxa de erro 5xx por rota.',
+                '# TYPE http_server_request_error_rate gauge',
+                '# HELP http_server_throughput_rps Throughput médio em requests por segundo desde o início do processo.',
+                '# TYPE http_server_throughput_rps gauge',
             ]
         )
-        for (method, path), (total, count) in sorted(self._latency_counter.items()):
-            avg = total / count if count else 0
+        total_requests = sum(self._request_counter.values())
+        lines.append(f'http_server_throughput_rps {total_requests / uptime:.6f}')
+
+        for (method, path), stats in sorted(self._latency_counter.items()):
+            avg = stats.total_seconds / stats.count if stats.count else 0
+            p95 = self._quantile(stats.samples, 0.95)
+            p99 = self._quantile(stats.samples, 0.99)
+            error_rate = stats.errors / stats.count if stats.count else 0
             lines.append(f'http_server_request_duration_seconds_avg{{method="{method}",path="{path}"}} {avg:.6f}')
+            lines.append(f'http_server_request_duration_seconds_p95{{method="{method}",path="{path}"}} {p95:.6f}')
+            lines.append(f'http_server_request_duration_seconds_p99{{method="{method}",path="{path}"}} {p99:.6f}')
+            lines.append(f'http_server_request_error_rate{{method="{method}",path="{path}"}} {error_rate:.6f}')
+
+        lines.extend(
+            [
+                '# HELP db_query_duration_seconds_avg Latência média por operação de banco.',
+                '# TYPE db_query_duration_seconds_avg gauge',
+                '# HELP db_query_duration_seconds_p95 Latência p95 por operação de banco.',
+                '# TYPE db_query_duration_seconds_p95 gauge',
+                '# HELP db_query_errors_total Total de erros por operação de banco.',
+                '# TYPE db_query_errors_total counter',
+            ]
+        )
+        for operation, stats in sorted(self._db_counter.items()):
+            avg = stats.total_seconds / stats.count if stats.count else 0
+            p95 = self._quantile(stats.samples, 0.95)
+            lines.append(f'db_query_duration_seconds_avg{{operation="{operation}"}} {avg:.6f}')
+            lines.append(f'db_query_duration_seconds_p95{{operation="{operation}"}} {p95:.6f}')
+            lines.append(f'db_query_errors_total{{operation="{operation}"}} {stats.errors}')
+
+        lines.extend(
+            [
+                '# HELP external_call_duration_seconds_avg Latência média por integração externa.',
+                '# TYPE external_call_duration_seconds_avg gauge',
+                '# HELP external_call_duration_seconds_p95 Latência p95 por integração externa.',
+                '# TYPE external_call_duration_seconds_p95 gauge',
+                '# HELP external_call_errors_total Total de erros por integração externa.',
+                '# TYPE external_call_errors_total counter',
+            ]
+        )
+        for integration, stats in sorted(self._external_counter.items()):
+            avg = stats.total_seconds / stats.count if stats.count else 0
+            p95 = self._quantile(stats.samples, 0.95)
+            lines.append(f'external_call_duration_seconds_avg{{integration="{integration}"}} {avg:.6f}')
+            lines.append(f'external_call_duration_seconds_p95{{integration="{integration}"}} {p95:.6f}')
+            lines.append(f'external_call_errors_total{{integration="{integration}"}} {stats.errors}')
 
         return '\n'.join(lines) + '\n'
 

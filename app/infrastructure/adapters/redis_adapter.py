@@ -1,10 +1,12 @@
 import json
 import logging
+import time
 from typing import Any
 
 from redis.asyncio import Redis
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.observability import metrics_registry
 from app.core.exceptions import TransientIntegrationError
 from app.core.settings import Settings
 from app.domain.ports.interfaces import CachePort
@@ -34,14 +36,17 @@ class RedisCacheAdapter(CachePort):
         except CircuitBreakerOpenError:
             return
 
+        started = time.perf_counter()
         try:
             await self.client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
         except Exception as exc:
             self._circuit_breaker.on_failure()
+            metrics_registry.track_external_call('redis.set', time.perf_counter() - started, ok=False)
             logger.warning('Falha ao gravar no Redis; mantendo fallback em memória')
             raise TransientIntegrationError('Falha ao gravar cache no Redis') from exc
         else:
             self._circuit_breaker.on_success()
+            metrics_registry.track_external_call('redis.set', time.perf_counter() - started, ok=True)
 
     async def get(self, key: str) -> dict[str, Any] | None:
         try:
@@ -49,14 +54,17 @@ class RedisCacheAdapter(CachePort):
         except CircuitBreakerOpenError:
             return self._fallback_store.get(key)
 
+        started = time.perf_counter()
         try:
             value = await self.client.get(key)
         except Exception:
             logger.warning('Falha ao ler Redis; retornando fallback em memória')
             self._circuit_breaker.on_failure()
+            metrics_registry.track_external_call('redis.get', time.perf_counter() - started, ok=False)
             return self._fallback_store.get(key)
 
         self._circuit_breaker.on_success()
+        metrics_registry.track_external_call('redis.get', time.perf_counter() - started, ok=True)
         if value:
             parsed = json.loads(value)
             self._fallback_store[key] = parsed
