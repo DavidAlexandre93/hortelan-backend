@@ -5,8 +5,8 @@ from dataclasses import asdict
 from aiokafka import AIOKafkaProducer
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
-from app.core.settings import Settings
 from app.core.exceptions import TransientIntegrationError
+from app.core.settings import Settings
 from app.domain.entities.models import TelemetryReading
 from app.domain.ports.interfaces import TelemetryPublisherPort
 
@@ -47,25 +47,23 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
     async def publish_telemetry(self, reading: TelemetryReading) -> None:
         try:
             self._circuit_breaker.call_permitted()
-        except CircuitBreakerOpenError:
-            return
+        except CircuitBreakerOpenError as exc:
+            raise TransientIntegrationError('Circuit breaker aberto para Kafka') from exc
 
         producer = await self._producer_or_create()
         if producer is None:
-            raise TransientIntegrationError('Producer Kafka indisponível')
             self._circuit_breaker.on_failure()
-            return
+            raise TransientIntegrationError('Producer Kafka indisponível')
 
         payload = json.dumps(asdict(reading), default=str).encode('utf-8')
         try:
             await producer.send_and_wait(self.settings.kafka_topic_telemetry, payload)
         except Exception as exc:
+            self._circuit_breaker.on_failure()
             logger.exception('Falha ao publicar telemetria no Kafka')
             raise TransientIntegrationError('Falha ao publicar telemetria no Kafka') from exc
+        else:
             self._circuit_breaker.on_success()
-        except Exception:
-            self._circuit_breaker.on_failure()
-            return
 
     async def close(self) -> None:
         if self._producer:

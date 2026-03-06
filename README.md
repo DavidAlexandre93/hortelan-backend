@@ -236,7 +236,15 @@ WEB3_ACCOUNT_PRIVATE_KEY=
 
 LOG_LEVEL=INFO
 ENABLE_METRICS=true
+API_KEY=
+RATE_LIMIT_PER_MINUTE=120
+EXTERNAL_TIMEOUT_SECONDS=5.0
 ```
+
+### Segurança de endpoints sensíveis
+
+- `POST /api/v1/commands` e `POST /api/v1/ledger` aceitam proteção via header `x-api-key`.
+- Para ativar, configure `API_KEY` no ambiente. Se vazio, a proteção fica desativada (modo dev).
 
 ## Observabilidade e monitoramento
 

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     app_port: int = 8000
     log_level: str = 'INFO'
     enable_metrics: bool = True
+    api_key: str = ''
+    rate_limit_per_minute: int = 120
+    external_timeout_seconds: float = 5.0
     cors_origins: list[str] = Field(
         default_factory=lambda: ['http://localhost:3000', 'http://localhost:5173']
     )
