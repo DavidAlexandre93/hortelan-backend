@@ -29,3 +29,22 @@ def test_metrics_output_contains_http_measurements():
     assert 'http_server_requests_total' in payload
     assert 'http_server_inflight_requests' in payload
     assert 'http_server_request_duration_seconds_avg' in payload
+    assert 'http_server_request_duration_seconds_p95' in payload
+    assert 'http_server_request_duration_seconds_p99' in payload
+    assert 'http_server_request_error_rate' in payload
+    assert 'http_server_throughput_rps' in payload
+
+
+def test_metrics_output_contains_db_and_external_measurements():
+    metrics_registry.track_db_query('telemetry.list_recent', 0.002, ok=True)
+    metrics_registry.track_external_call('redis.get', 0.001, ok=False)
+
+    response = asyncio.run(metrics())
+    payload = response.body.decode('utf-8')
+
+    assert 'db_query_duration_seconds_avg' in payload
+    assert 'db_query_duration_seconds_p95' in payload
+    assert 'db_query_errors_total' in payload
+    assert 'external_call_duration_seconds_avg' in payload
+    assert 'external_call_duration_seconds_p95' in payload
+    assert 'external_call_errors_total' in payload

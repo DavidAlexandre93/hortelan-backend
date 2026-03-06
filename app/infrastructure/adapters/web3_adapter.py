@@ -1,10 +1,12 @@
 import asyncio
 import json
 import logging
+import time
 
 from web3 import Web3
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.observability import metrics_registry
 from app.core.exceptions import InfrastructureError
 from app.core.settings import Settings
 from app.domain.entities.models import LedgerRecord
@@ -58,6 +60,7 @@ class Web3BlockchainAdapter(BlockchainPort):
         except CircuitBreakerOpenError:
             return record
 
+        started = time.perf_counter()
         try:
             tx_hash = await asyncio.wait_for(
                 asyncio.to_thread(self._send_transaction, record),
@@ -65,10 +68,12 @@ class Web3BlockchainAdapter(BlockchainPort):
             )
         except Exception as exc:
             self._circuit_breaker.on_failure()
+            metrics_registry.track_external_call('web3.write_record', time.perf_counter() - started, ok=False)
             logger.exception('Falha ao registrar evento no Web3')
             raise InfrastructureError('Falha ao registrar evento em blockchain') from exc
         else:
             self._circuit_breaker.on_success()
+            metrics_registry.track_external_call('web3.write_record', time.perf_counter() - started, ok=True)
             record.tx_hash = tx_hash
             record.confirmed = True
             return record

@@ -18,6 +18,7 @@ Backend do **Hortelan** desenvolvido com **FastAPI + Python 3.11** em **Arquitet
 - [Exemplos de uso com cURL](#exemplos-de-uso-com-curl)
 - [Variáveis de ambiente](#variáveis-de-ambiente)
 - [Observabilidade e monitoramento](#observabilidade-e-monitoramento)
+- [Performance e baseline](#performance-e-baseline)
 - [Próximas implementações documentais](#próximas-implementações-documentais)
 - [Testes e qualidade](#testes-e-qualidade)
 - [Deploy na Vercel](#deploy-na-vercel)
@@ -248,6 +249,17 @@ EXTERNAL_TIMEOUT_SECONDS=5.0
 
 - `POST /api/v1/commands` e `POST /api/v1/ledger` aceitam proteção via header `x-api-key`.
 - Para ativar, configure `API_KEY` no ambiente. Se vazio, a proteção fica desativada (modo dev).
+
+
+## Performance e baseline
+
+Para medir baseline local de latência/erros/throughput:
+
+```bash
+python scripts/perf_baseline.py --base-url http://localhost:8000 --requests 300 --concurrency 25
+```
+
+As métricas detalhadas ficam em `/metrics`, incluindo latência `avg/p95/p99` por rota, taxa de erro, throughput, métricas de DB e integrações externas.
 
 ## Observabilidade e monitoramento
 
