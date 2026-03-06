@@ -49,7 +49,7 @@ class CommandSnapshotOut(BaseModel):
     device_id: str
     action: str
     duration_seconds: int
-    sent_at: str
+    sent_at: datetime
 
 
 class DeviceSnapshotOut(BaseModel):
