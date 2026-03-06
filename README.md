@@ -331,7 +331,7 @@ Este repositório agora possui uma malha de CI/CD e segurança em múltiplas cam
   - validação de empacotamento (`python -m build`);
   - deploy para Vercel no `push` para `main` quando segredos estão configurados.
 - **`Security Hardening`** (`.github/workflows/security-hardening.yml`)
-  - dependency review em PRs;
+  - dependency review em PRs (executa automaticamente quando Dependency Graph estiver habilitado no repositório);
   - CodeQL SAST para Python;
   - `bandit`, `pip-audit` e varredura de segredos com `detect-secrets` (em PR, vulnerabilidades conhecidas geram warning; em push/schedule, bloqueiam o pipeline).
 - **`Auto Security Remediation PR`** (`.github/workflows/auto-security-pr.yml`)

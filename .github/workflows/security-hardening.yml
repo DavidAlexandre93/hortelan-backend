@@ -16,16 +16,34 @@ jobs:
   dependency-review:
     name: Dependency review (PR)
     if: github.event_name == 'pull_request'
-    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Dependency review (best-effort)
+      - name: Check dependency graph availability
+        id: depgraph
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.get({ owner, repo });
+            const depGraph = response.data.security_and_analysis?.dependency_graph?.status;
+            const supported = depGraph === 'enabled';
+            core.setOutput('supported', supported ? 'true' : 'false');
+            if (!supported) {
+              core.notice('Dependency graph is not enabled. Skipping dependency-review-action to avoid failing CI.');
+            }
+
+      - name: Dependency review
+        if: steps.depgraph.outputs.supported == 'true'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
+
+      - name: Dependency review skipped
+        if: steps.depgraph.outputs.supported != 'true'
+        run: echo "Dependency graph not enabled in repository settings. Skipping dependency review for this PR."
 
   sast-codeql:
     name: CodeQL SAST (python)
