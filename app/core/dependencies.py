@@ -4,7 +4,11 @@ from contextlib import suppress
 from app.application.services.coverage_service import CoverageService
 from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
 from app.application.use_cases.iot.dispatch_irrigation_command_use_case import DispatchIrrigationCommandUseCase
+from app.application.use_cases.iot.get_cached_command_use_case import GetCachedCommandUseCase
+from app.application.use_cases.iot.get_cached_telemetry_use_case import GetCachedTelemetryUseCase
+from app.application.use_cases.iot.get_device_snapshot_use_case import GetDeviceSnapshotUseCase
 from app.application.use_cases.iot.ingest_telemetry_use_case import IngestTelemetryUseCase
+from app.application.use_cases.iot.list_telemetry_use_case import ListTelemetryUseCase
 from app.core.settings import Settings, get_settings
 from app.infrastructure.adapters.aws_iot_adapter import AwsIotCoreAdapter
 from app.infrastructure.adapters.kafka_adapter import KafkaTelemetryAdapter
@@ -38,6 +42,10 @@ class Container:
             command_port=self.command_adapter,
             cache=self.cache,
         )
+        self.list_telemetry_use_case = ListTelemetryUseCase(relational_repo=self.relational_repo)
+        self.get_cached_telemetry_use_case = GetCachedTelemetryUseCase(cache=self.cache)
+        self.get_cached_command_use_case = GetCachedCommandUseCase(cache=self.cache)
+        self.get_device_snapshot_use_case = GetDeviceSnapshotUseCase(cache=self.cache)
         self.register_ledger_record_use_case = RegisterLedgerRecordUseCase(
             blockchain_port=self.blockchain_adapter,
         )
