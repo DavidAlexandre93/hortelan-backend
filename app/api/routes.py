@@ -55,7 +55,7 @@ async def list_telemetry(
     limit: int = Query(default=20, ge=1, le=200),
     device_id: str | None = Query(default=None),
 ) -> list[TelemetryOut]:
-    items = await _container().relational_repo.list_recent(limit=limit, device_id=device_id)
+    items = await _container().list_telemetry_use_case.execute(limit=limit, device_id=device_id)
     return [
         TelemetryOut(
             device_id=item.device_id,
@@ -71,7 +71,7 @@ async def list_telemetry(
 
 @router.get('/telemetry/latest/{device_id}', response_model=TelemetryOut | None, tags=['telemetria'])
 async def latest_telemetry(device_id: str) -> TelemetryOut | None:
-    cached = await _container().cache.get(f'telemetry:{device_id}')
+    cached = await _container().get_cached_telemetry_use_case.execute(device_id)
     if not cached:
         return None
     return TelemetryOut.model_validate(cached)
@@ -91,7 +91,7 @@ async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
 
 @router.get('/commands/latest/{device_id}', response_model=CommandSnapshotOut | None, tags=['comandos'])
 async def latest_command(device_id: str) -> CommandSnapshotOut | None:
-    cached = await _container().cache.get(f'command:{device_id}')
+    cached = await _container().get_cached_command_use_case.execute(device_id)
     if not cached:
         return None
 
@@ -112,9 +112,8 @@ async def register_ledger(payload: LedgerRecordIn) -> AckResponse:
 
 @router.get('/devices/{device_id}/snapshot', response_model=DeviceSnapshotOut, tags=['dispositivos'])
 async def get_device_snapshot(device_id: str) -> DeviceSnapshotOut:
-    telemetry = await _container().cache.get(f'telemetry:{device_id}')
-    command = await _container().cache.get(f'command:{device_id}')
-    return DeviceSnapshotOut(device_id=device_id, telemetry=telemetry, command=command)
+    snapshot = await _container().get_device_snapshot_use_case.execute(device_id)
+    return DeviceSnapshotOut.model_validate(snapshot)
 
 
 @router.get('/requirements', response_model=list[RequirementCoverageOut], tags=['cobertura estratégica'])

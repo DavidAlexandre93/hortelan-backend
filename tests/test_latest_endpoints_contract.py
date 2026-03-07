@@ -7,17 +7,18 @@ import app.api.routes as routes
 pytestmark = pytest.mark.integration
 
 
-class _FakeCache:
+class _FakeGetCachedUseCase:
     def __init__(self, payload):
         self._payload = payload
 
-    async def get(self, _key: str):
+    async def execute(self, _device_id: str):
         return self._payload
 
 
 class _FakeContainer:
     def __init__(self, payload):
-        self.cache = _FakeCache(payload)
+        self.get_cached_telemetry_use_case = _FakeGetCachedUseCase(payload)
+        self.get_cached_command_use_case = _FakeGetCachedUseCase(payload)
 
 
 def test_latest_telemetry_returns_none_for_missing_payload(monkeypatch):
