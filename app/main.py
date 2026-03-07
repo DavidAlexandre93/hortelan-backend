@@ -24,7 +24,7 @@ async def lifespan(_: FastAPI):
     await container.relational_repo.init_schema()
     logger.info('application_started')
     yield
-    await container.telemetry_publisher.close()
+    await container.close()
     logger.info('application_stopped')
 
 
