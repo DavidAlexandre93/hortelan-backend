@@ -1,0 +1,66 @@
+name: Auto Bugfix Remediation PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */12 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bugfix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies and QA tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      - name: Apply safe static autofixes
+        run: |
+          ruff check app api tests --fix
+          ruff format app api tests
+
+      - name: Validate after fixes
+        run: pytest -q
+
+      - name: Create pull request for bugfixes
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: 'fix(ci): aplica autofix estático para bugs potenciais'
+          branch: 'bot/auto-bugfix-remediation'
+          delete-branch: true
+          title: 'fix(ci): correções automáticas de bugs potenciais detectados por análise estática'
+          body: |
+            ## 🤖 Correção automática de bugs potenciais
+
+            Este PR foi gerado automaticamente para aplicar correções seguras com análise estática.
+
+            ### Fluxo aplicado
+            - Executa `ruff check --fix` para correções automáticas seguras.
+            - Aplica `ruff format` para padronização.
+            - Revalida com testes (`pytest -q`).
+            - Abre PR somente quando existem mudanças versionadas.
+
+            ### Observações
+            - Correções foram limitadas a autofixes estáticos para reduzir risco.
+            - Merge recomendado apenas após revisão humana.
+          labels: |
+            bugfix
+            automated-pr
+            quality

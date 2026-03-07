@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     app_port: int = 8000
     log_level: str = 'INFO'
     enable_metrics: bool = True
+    api_key: str = ''
+    enforce_api_key_in_production: bool = True
+    rate_limit_per_minute: int = 120
+    external_timeout_seconds: float = 5.0
     cors_origins: list[str] = Field(
         default_factory=lambda: ['http://localhost:3000', 'http://localhost:5173']
     )
@@ -46,6 +50,12 @@ class Settings(BaseSettings):
     otel_service_version: str = '1.0.0'
     otel_exporter_otlp_endpoint: str = ''
     otel_exporter_timeout: int = 10
+
+    circuit_breaker_failure_rate_threshold: float = 50.0
+    circuit_breaker_sliding_window_size: int = 10
+    circuit_breaker_minimum_calls: int = 5
+    circuit_breaker_wait_duration_seconds: int = 30
+    circuit_breaker_permitted_half_open_calls: int = 2
 
 
 @lru_cache

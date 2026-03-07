@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -10,7 +9,7 @@ from sqlalchemy import text
 
 from app.api.error_handlers import register_exception_handlers
 from app.api.routes import router
-from app.core.dependencies import container
+from app.core.dependencies import get_container
 from app.core.observability import configure_telemetry
 from app.core.observability import ObservabilityMiddleware, configure_logging, metrics_registry
 from app.core.settings import get_settings
@@ -18,22 +17,18 @@ from app.core.settings import get_settings
 settings = get_settings()
 logger = configure_logging(settings.log_level)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
-)
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    container = get_container()
     await container.relational_repo.init_schema()
     logger.info('application_started')
     yield
-    await container.telemetry_publisher.close()
+    await container.close()
     logger.info('application_stopped')
 
 
-favicon_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
+favicon_svg_path = Path(__file__).resolve().parent / 'static' / 'favicon.svg'
 
 app = FastAPI(
     title=settings.app_name,
@@ -65,7 +60,7 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
 )
-app.add_middleware(ObservabilityMiddleware, logger=logger)
+app.add_middleware(ObservabilityMiddleware, logger=logger, settings=settings)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -98,12 +93,17 @@ async def redoc_html() -> HTMLResponse:
 
 @app.get('/favicon.svg', include_in_schema=False)
 async def favicon() -> FileResponse:
-    return FileResponse(favicon_path, media_type='image/svg+xml')
+    return FileResponse(favicon_svg_path, media_type='image/svg+xml')
 
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon_ico() -> FileResponse:
-    return FileResponse(favicon_path, media_type='image/svg+xml')
+    return FileResponse(favicon_svg_path, media_type='image/svg+xml')
+
+
+@app.get('/', include_in_schema=False)
+async def root_status() -> dict[str, str]:
+    return {'message': 'Service available'}
 
 
 @app.get(
@@ -126,6 +126,7 @@ async def health_ready() -> dict[str, object]:
     checks: dict[str, str] = {'database': 'ok'}
     status = 'ready'
     try:
+        container = get_container()
         async with container.relational_repo.engine.connect() as conn:
             await conn.execute(text('SELECT 1'))
     except Exception:

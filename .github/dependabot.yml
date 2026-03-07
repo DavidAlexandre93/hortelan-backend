@@ -3,21 +3,44 @@ updates:
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
+      interval: "daily"
+      time: "05:00"
       timezone: "America/Sao_Paulo"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 20
+    target-branch: "main"
     labels:
       - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      observability:
+        patterns:
+          - "opentelemetry*"
+      web-stack:
+        patterns:
+          - "fastapi"
+          - "uvicorn*"
+          - "httpx"
+      data-stack:
+        patterns:
+          - "sqlalchemy"
+          - "aiosqlite"
+          - "motor"
+          - "redis"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:15"
+      interval: "daily"
+      time: "05:30"
       timezone: "America/Sao_Paulo"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 20
+    target-branch: "main"
     labels:
       - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(actions)"
+      include: "scope"

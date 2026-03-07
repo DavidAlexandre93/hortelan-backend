@@ -1,0 +1,136 @@
+name: Security Hardening
+
+on:
+  pull_request:
+    branches: ["*"]
+  push:
+    branches: ["main", "master", "develop"]
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  dependency-review:
+    name: Dependency review (PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Check dependency graph availability
+        id: depgraph
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const response = await github.rest.repos.get({ owner, repo });
+            const depGraph = response.data.security_and_analysis?.dependency_graph?.status;
+            const supported = depGraph === 'enabled';
+            core.setOutput('supported', supported ? 'true' : 'false');
+            if (!supported) {
+              core.notice('Dependency graph is not enabled. Skipping dependency-review-action to avoid failing CI.');
+            }
+
+      - name: Dependency review
+        if: steps.depgraph.outputs.supported == 'true'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+      - name: Dependency review skipped
+        if: steps.depgraph.outputs.supported != 'true'
+        run: echo "Dependency graph not enabled in repository settings. Skipping dependency review for this PR."
+
+  sast-codeql:
+    name: CodeQL SAST (python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+
+  python-security:
+    name: Python security scans
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install bandit pip-audit detect-secrets
+
+      - name: Bandit SAST
+        run: bandit -r app api -x tests -ll
+
+      - name: Vulnerability audit (report)
+        run: |
+          pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+
+      - name: Enforce vulnerability policy
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          report_path = 'pip-audit-report.json'
+          with open(report_path, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+
+          deps = data.get('dependencies', [])
+          vuln_count = sum(len(dep.get('vulns', [])) for dep in deps)
+          event = os.environ.get('GITHUB_EVENT_NAME', '')
+
+          print(f'Vulnerabilities found: {vuln_count}')
+
+          # Em PR: não bloquear merge por vulnerabilidades herdadas; a correção automática abre PR separado.
+          if event == 'pull_request':
+              if vuln_count > 0:
+                  print('::warning::Vulnerabilidades detectadas no PR (não bloqueante). Fluxo de auto-remediação irá abrir PR de correção.')
+              sys.exit(0)
+
+          # Em push/schedule: política estrita.
+          if vuln_count > 0:
+              print('::error::Vulnerabilidades detectadas em branch protegida/agendamento. Falhando pipeline.')
+              sys.exit(1)
+          PY
+
+      - name: Secret baseline scan
+        run: |
+          detect-secrets scan --all-files > .secrets.baseline
+          detect-secrets audit .secrets.baseline --stats || true
+
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-reports
+          path: |
+            pip-audit-report.json
+            .secrets.baseline
+          if-no-files-found: ignore

@@ -67,10 +67,13 @@ O projeto segue **Hexagonal Architecture** para reduzir acoplamento com framewor
 ```text
 app/
   api/
-    routes.py            # Endpoints FastAPI
-    schemas.py           # Contratos de entrada/saída
+    routes.py            # Façade de compatibilidade + roteador principal
+    contracts/           # Schemas por contexto (telemetry, commands, ledger...)
+    schemas.py           # Façade legada para contratos da API
   application/
-    use_cases/           # Casos de uso
+    use_cases/
+      iot/               # Casos de uso de telemetria/comandos
+      governance/        # Casos de uso de trilha/auditoria (ledger)
   core/
     settings.py          # Configurações por ambiente
     dependencies.py      # Container de dependências
@@ -299,19 +302,28 @@ Passos:
 
 ## CI/CD
 
-Pipeline GitHub Actions com foco em mudanças de backend:
+O pipeline principal foi estruturado para entrega contínua segura e reproduzível, cobrindo qualidade, segurança, build, versionamento, deploy controlado, rollback e observabilidade.
 
-- detecta mudanças em `app/`, `api/`, `tests/` e arquivos-chave;
-- instala dependências;
-- valida sintaxe com `compileall`;
-- executa testes (`pytest -q`);
-- deploy para Vercel no `push` em `main` quando segredos estão configurados.
+- **Workflow principal:** `.github/workflows/cicd.yml`
+  - instalação de dependências e validação (`pip check`);
+  - lint (`ruff`), formatação (`ruff format --check`) e type-check (`mypy`);
+  - testes unitários e de integração separados por marcador pytest;
+  - cobertura mínima de 85% para o escopo do backend;
+  - segurança com `bandit`, `pip-audit`, `detect-secrets` e `gitleaks`;
+  - build de pacote Python (`python -m build`) + metadados versionados;
+  - build e publicação de imagem Docker no GHCR com tags rastreáveis;
+  - deploy automatizado em staging e deploy de produção controlado por environment;
+  - rollback manual para tag de imagem específica;
+  - validação pós-deploy de `/health`, `/health/ready` e `/metrics`.
 
-Segredos esperados para deploy:
+- **Workflows complementares de segurança/automação:**
+  - `.github/workflows/security-hardening.yml`
+  - `.github/workflows/auto-security-pr.yml`
+  - `.github/workflows/auto-bugfix-pr.yml`
 
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+Para configuração detalhada de segredos, variáveis e operação de rollback, consulte:
+
+- `docs/cicd.md`
 
 ## Cobertura estratégica do produto
 

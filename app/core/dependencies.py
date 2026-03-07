@@ -1,6 +1,10 @@
-from app.application.use_cases.dispatch_command import DispatchIrrigationCommandUseCase
-from app.application.use_cases.ingest_telemetry import IngestTelemetryUseCase
-from app.application.use_cases.register_ledger import RegisterLedgerRecordUseCase
+from functools import lru_cache
+from contextlib import suppress
+
+from app.application.services.coverage_service import CoverageService
+from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
+from app.application.use_cases.iot.dispatch_irrigation_command_use_case import DispatchIrrigationCommandUseCase
+from app.application.use_cases.iot.ingest_telemetry_use_case import IngestTelemetryUseCase
 from app.core.settings import Settings, get_settings
 from app.infrastructure.adapters.aws_iot_adapter import AwsIotCoreAdapter
 from app.infrastructure.adapters.kafka_adapter import KafkaTelemetryAdapter
@@ -8,6 +12,8 @@ from app.infrastructure.adapters.redis_adapter import RedisCacheAdapter
 from app.infrastructure.adapters.web3_adapter import Web3BlockchainAdapter
 from app.infrastructure.persistence.document_repository import MongoTelemetryRepository
 from app.infrastructure.persistence.relational_repository import SqlAlchemyTelemetryRepository
+
+
 
 
 class Container:
@@ -20,6 +26,7 @@ class Container:
         self.blockchain_adapter = Web3BlockchainAdapter(settings)
         self.relational_repo = SqlAlchemyTelemetryRepository(settings)
         self.document_repo = MongoTelemetryRepository(settings)
+        self.coverage_service = CoverageService()
 
         self.ingest_telemetry_use_case = IngestTelemetryUseCase(
             telemetry_publisher=self.telemetry_publisher,
@@ -35,5 +42,19 @@ class Container:
             blockchain_port=self.blockchain_adapter,
         )
 
+    async def close(self) -> None:
+        await self.telemetry_publisher.close()
 
-container = Container(get_settings())
+        with suppress(Exception):
+            await self.cache.client.close()
+
+        with suppress(Exception):
+            self.document_repo.client.close()
+
+        with suppress(Exception):
+            await self.relational_repo.engine.dispose()
+
+
+@lru_cache
+def get_container() -> Container:
+    return Container(get_settings())

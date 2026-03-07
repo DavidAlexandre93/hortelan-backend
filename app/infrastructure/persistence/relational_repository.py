@@ -1,9 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, String, select
+import time
+
+from sqlalchemy import DateTime, Float, Index, String, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from app.core.observability import metrics_registry
 from app.core.settings import Settings
 from app.domain.entities.models import TelemetryReading
 from app.domain.ports.interfaces import RelationalTelemetryRepositoryPort
@@ -23,6 +26,11 @@ class TelemetryORM(Base):
     ph: Mapped[float] = mapped_column(Float)
     captured_at: Mapped[datetime] = mapped_column(DateTime)
 
+    __table_args__ = (
+        Index('ix_telemetry_device_captured_desc', 'device_id', 'captured_at'),
+        Index('ix_telemetry_captured_desc', 'captured_at'),
+    )
+
 
 class SqlAlchemyTelemetryRepository(RelationalTelemetryRepositoryPort):
     def __init__(self, settings: Settings) -> None:
@@ -34,26 +42,50 @@ class SqlAlchemyTelemetryRepository(RelationalTelemetryRepositoryPort):
             await conn.run_sync(Base.metadata.create_all)
 
     async def save(self, reading: TelemetryReading) -> None:
-        async with self.session_factory() as session:
-            session.add(
-                TelemetryORM(
-                    device_id=reading.device_id,
-                    moisture=reading.moisture,
-                    temperature=reading.temperature,
-                    ph=reading.ph,
-                    captured_at=reading.captured_at,
+        started = time.perf_counter()
+        try:
+            async with self.session_factory() as session:
+                session.add(
+                    TelemetryORM(
+                        device_id=reading.device_id,
+                        moisture=reading.moisture,
+                        temperature=reading.temperature,
+                        ph=reading.ph,
+                        captured_at=reading.captured_at,
+                    )
                 )
-            )
-            await session.commit()
+                await session.commit()
+        except Exception:
+            metrics_registry.track_db_query('telemetry.save', time.perf_counter() - started, ok=False)
+            raise
+        else:
+            metrics_registry.track_db_query('telemetry.save', time.perf_counter() - started, ok=True)
 
     async def list_recent(self, limit: int = 20, device_id: str | None = None) -> list[TelemetryReading]:
-        stmt = select(TelemetryORM).order_by(TelemetryORM.captured_at.desc()).limit(limit)
+        started = time.perf_counter()
+        stmt = (
+            select(
+                TelemetryORM.device_id,
+                TelemetryORM.moisture,
+                TelemetryORM.temperature,
+                TelemetryORM.ph,
+                TelemetryORM.captured_at,
+            )
+            .order_by(TelemetryORM.captured_at.desc())
+            .limit(limit)
+        )
         if device_id:
             stmt = stmt.where(TelemetryORM.device_id == device_id)
 
-        async with self.session_factory() as session:
-            rows = await session.scalars(stmt)
-            items = list(rows)
+        try:
+            async with self.session_factory() as session:
+                rows = await session.execute(stmt)
+                items = rows.all()
+        except Exception:
+            metrics_registry.track_db_query('telemetry.list_recent', time.perf_counter() - started, ok=False)
+            raise
+        else:
+            metrics_registry.track_db_query('telemetry.list_recent', time.perf_counter() - started, ok=True)
 
         return [
             TelemetryReading(
