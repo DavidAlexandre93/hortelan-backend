@@ -167,9 +167,63 @@ jobs:
             .secrets.baseline
           if-no-files-found: ignore
 
+  sonar:
+    name: SonarQube analysis (code smells + coverage)
+    needs: [changes, quality]
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+    steps:
+      - name: Validate SonarQube configuration
+        run: |
+          set -euo pipefail
+          if [[ -z "${SONAR_TOKEN}" ]]; then
+            echo "SONAR_TOKEN não configurado nos secrets do repositório/organização."
+            exit 1
+          fi
+          if [[ -z "${SONAR_HOST_URL}" ]]; then
+            echo "SONAR_HOST_URL não configurado nas variables do repositório/organização."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage report (Python 3.11)
+        uses: actions/download-artifact@v6
+        with:
+          name: coverage-py3.11
+          path: .
+
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >-
+            -Dsonar.projectKey=${{ github.repository }}
+            -Dsonar.projectName=${{ github.event.repository.name }}
+            -Dsonar.sources=app,api
+            -Dsonar.tests=tests
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+            -Dsonar.python.version=3.11,3.12
+            -Dsonar.sourceEncoding=UTF-8
+
+      - name: SonarQube quality gate
+        uses: SonarSource/sonarqube-quality-gate-action@v1.2.0
+        timeout-minutes: 10
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+
   build-package:
     name: Build package and version artifacts
-    needs: [changes, quality, security]
+    needs: [changes, quality, security, sonar]
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
