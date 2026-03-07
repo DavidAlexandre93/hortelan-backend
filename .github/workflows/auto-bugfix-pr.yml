@@ -19,7 +19,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -40,7 +40,7 @@ jobs:
         run: pytest -q
 
       - name: Create pull request for bugfixes
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: 'fix(ci): aplica autofix estático para bugs potenciais'
           branch: 'bot/auto-bugfix-remediation'
