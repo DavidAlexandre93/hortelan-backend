@@ -1,0 +1,13 @@
+name: "Hortelan CodeQL Config"
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - app
+  - api
+  - scripts
+
+paths-ignore:
+  - tests
+  - docs

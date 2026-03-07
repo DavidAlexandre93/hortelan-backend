@@ -1,0 +1,62 @@
+name: Auto Security Remediation PR
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Attempt dependency security fixes
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip-audit --requirement requirements.txt --fix || true
+
+      - name: Validate with tests
+        run: |
+          pip install -r requirements.txt
+          pytest -q
+
+      - name: Create pull request for security fixes
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'chore(security): aplica correções automáticas de vulnerabilidades'
+          branch: 'bot/security-auto-remediation'
+          delete-branch: true
+          title: 'chore(security): correção automática de vulnerabilidades de dependências'
+          body: |
+            ## 🤖 Correção automática de segurança
+
+            Este PR foi gerado automaticamente para mitigar vulnerabilidades detectadas em dependências Python.
+
+            ### Fluxo aplicado
+            - Executa `pip-audit --fix` no `requirements.txt`.
+            - Revalida com testes (`pytest -q`).
+            - Abre PR somente quando existem mudanças versionadas.
+
+            ### Observações
+            - Revise cuidadosamente as versões alteradas e impacto de compatibilidade.
+            - Pipeline de CI e segurança completa valida este PR antes de merge.
+          labels: |
+            dependencies
+            security
+            automated-pr

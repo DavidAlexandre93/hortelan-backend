@@ -1,6 +1,10 @@
 import asyncio
 
+import pytest
+
 import app.api.routes as routes
+
+pytestmark = pytest.mark.integration
 
 
 class _FakeCache:

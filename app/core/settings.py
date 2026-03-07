@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     log_level: str = 'INFO'
     enable_metrics: bool = True
     api_key: str = ''
+    enforce_api_key_in_production: bool = True
     rate_limit_per_minute: int = 120
     external_timeout_seconds: float = 5.0
     cors_origins: list[str] = Field(
