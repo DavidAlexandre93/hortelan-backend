@@ -1,4 +1,5 @@
 from functools import lru_cache
+from contextlib import suppress
 
 from app.application.services.coverage_service import CoverageService
 from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
@@ -11,6 +12,8 @@ from app.infrastructure.adapters.redis_adapter import RedisCacheAdapter
 from app.infrastructure.adapters.web3_adapter import Web3BlockchainAdapter
 from app.infrastructure.persistence.document_repository import MongoTelemetryRepository
 from app.infrastructure.persistence.relational_repository import SqlAlchemyTelemetryRepository
+
+
 
 
 class Container:
@@ -38,6 +41,18 @@ class Container:
         self.register_ledger_record_use_case = RegisterLedgerRecordUseCase(
             blockchain_port=self.blockchain_adapter,
         )
+
+    async def close(self) -> None:
+        await self.telemetry_publisher.close()
+
+        with suppress(Exception):
+            await self.cache.client.close()
+
+        with suppress(Exception):
+            self.document_repo.client.close()
+
+        with suppress(Exception):
+            await self.relational_repo.engine.dispose()
 
 
 @lru_cache
