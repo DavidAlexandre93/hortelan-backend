@@ -155,3 +155,15 @@ for _requirement_id, _title in REQUIREMENT_CATALOG:
         tags=['requirements'],
         summary=f'Cobertura do requisito {_requirement_id}',
     )
+
+
+__all__ = [
+    "IMPLEMENTED_REQUIREMENTS",
+    "PRODUCT_MODULES",
+    "REQUIREMENT_CATALOG",
+    "STRATEGIC_COVERAGE_MATRIX",
+    "STRATEGIC_NEXT_STEPS",
+    "_build_requirement_detail",
+    "_slugify_requirement",
+    "router",
+]
