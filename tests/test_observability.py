@@ -1,7 +1,11 @@
 import asyncio
 
+import pytest
+
 from app.core.observability import metrics_registry
 from app.main import health_live, health_ready, metrics, root_status
+
+pytestmark = pytest.mark.integration
 
 
 def test_health_readiness_and_liveness_endpoints():
