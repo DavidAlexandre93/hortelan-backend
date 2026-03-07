@@ -16,6 +16,17 @@ from app.core.settings import get_settings
 
 settings = get_settings()
 logger = configure_logging(settings.log_level)
+VERCEL_ANALYTICS_SCRIPT = '<script defer src="/_vercel/insights/script.js"></script>'
+
+
+def _inject_vercel_analytics(response: HTMLResponse) -> HTMLResponse:
+    rendered_html = response.body.decode('utf-8')
+    if VERCEL_ANALYTICS_SCRIPT in rendered_html:
+        return response
+
+    response.body = rendered_html.replace('</head>', f'    {VERCEL_ANALYTICS_SCRIPT}\n  </head>').encode('utf-8')
+    response.headers['content-length'] = str(len(response.body))
+    return response
 
 
 @asynccontextmanager
@@ -75,20 +86,22 @@ configure_telemetry(app, settings)
 
 @app.get('/docs', include_in_schema=False)
 async def custom_swagger_ui_html() -> HTMLResponse:
-    return get_swagger_ui_html(
+    response = get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=f'{app.title} - Swagger UI',
         swagger_favicon_url='/favicon.svg',
     )
+    return _inject_vercel_analytics(response)
 
 
 @app.get('/redoc', include_in_schema=False)
 async def redoc_html() -> HTMLResponse:
-    return get_redoc_html(
+    response = get_redoc_html(
         openapi_url=app.openapi_url,
         title=f'{app.title} - ReDoc',
         redoc_favicon_url='/favicon.svg',
     )
+    return _inject_vercel_analytics(response)
 
 
 @app.get('/favicon.svg', include_in_schema=False)
