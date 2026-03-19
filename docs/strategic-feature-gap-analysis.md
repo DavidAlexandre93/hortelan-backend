@@ -14,7 +14,7 @@ O backend atual **não atende integralmente** ao núcleo estratégico completo. 
 | Funcionalidade estratégica | Status atual | Evidência técnica |
 | --- | --- | --- |
 | Cadastro e gestão de hortas/plantas | **Não atende ainda** | Está catalogado como requisito (2.1 e 3.1), mas fora do conjunto marcado como implementado. |
-| Integração com sensores e dispositivos IoT | **Atende parcialmente** | Existem endpoints de telemetria/comandos e snapshot de dispositivo; requisitos 4.1, 4.4, 4.5 e 4.6 estão marcados como implementados. |
+| Integração com sensores e dispositivos IoT | **Atende parcialmente** | Existem endpoints de telemetria/comandos, snapshot de dispositivo, integração direta com AWS IoT para comandos e publicação assíncrona da telemetria em Kafka; uma camada analítica/OLAP dedicada ainda não aparece implementada no código atual. |
 | Dashboard de monitoramento | **Não atende ainda (backend dedicado)** | Requisitos de dashboard (5.x) existem no catálogo, mas não estão marcados como implementados. |
 | Automação por regras | **Não atende ainda** | Requisitos de automação (6.x) estão no catálogo sem marcação de implementação. |
 | Alertas e notificações | **Não atende ainda** | Requisitos (10.x) aparecem no catálogo, sem implementação marcada. |

@@ -171,7 +171,7 @@ PRODUCT_MODULES: list[dict[str, object]] = [
         'status': 'atende',
         'implemented': True,
         'existing_endpoints': ['/api/v1/telemetry', '/api/v1/commands', '/api/v1/devices/{device_id}/snapshot'],
-        'notes': 'Fluxo principal de telemetria/comando está funcional no backend.',
+        'notes': 'Fluxo principal de telemetria/comando está funcional no backend, com integração direta ao AWS IoT para comandos e publicação assíncrona da telemetria em Kafka; uma camada analítica/OLAP dedicada ainda não está implementada.',
     },
     {
         'slug': 'alertas-basicos',
