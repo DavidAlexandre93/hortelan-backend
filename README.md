@@ -38,7 +38,7 @@ Este serviço expõe APIs para:
 - leitura de snapshots operacionais por dispositivo;
 - análise de cobertura de requisitos e prontidão de módulos do produto.
 
-A base atual está mais madura em **telemetria/comandos IoT**, com suporte de repositórios relacional + documental e cache distribuído.
+A base atual está mais madura em **telemetria/comandos IoT**, com suporte de repositórios relacional + documental e cache distribuído. No código atual, há comunicação direta com o **AWS IoT Core** para publicação de comandos e publicação assíncrona da telemetria em Kafka, mas a camada analítica **OLAP** ainda não está implementada.
 
 ## Stack e integrações
 
@@ -46,6 +46,7 @@ A base atual está mais madura em **telemetria/comandos IoT**, com suporte de re
 - **Validação/configuração:** Pydantic + pydantic-settings
 - **Mensageria:** Kafka (`aiokafka`)
 - **Comandos IoT:** AWS IoT Core (`boto3`)
+- **Pipeline de telemetria atual:** persistência relacional + documental, cache e publicação assíncrona em Kafka
 - **Cache:** Redis (`redis`)
 - **Ledger / Blockchain:** Web3 (`web3`)
 - **Persistência relacional:** SQLAlchemy async + SQLite (default local)
