@@ -28,13 +28,12 @@ jobs:
       - name: Install dependencies and QA tools
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install ruff
+          python -m pip install -e '.[dev]'
 
       - name: Apply safe static autofixes
         run: |
-          ruff check app api tests --fix
-          ruff format app api tests
+          ruff check app api scripts tests --fix
+          ruff format app api scripts tests
 
       - name: Validate after fixes
         run: pytest -q

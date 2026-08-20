@@ -1,0 +1,45 @@
+schema: spec-driven
+
+context: |
+  Produto: API Hortelan para telemetria IoT, comandos de irrigacao, snapshots de
+  dispositivos, ledger e cobertura estrategica do produto.
+  Linguagem dos artefatos: pt-BR, preservando headings estruturais e os termos
+  normativos SHALL/MUST em ingles para validacao estavel.
+  Stack: Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy async, Redis, Kafka,
+  MongoDB, AWS IoT, Web3 e OpenTelemetry.
+  Arquitetura: hexagonal/ports-and-adapters, com API como adaptador de entrada,
+  casos de uso na camada application, contratos e entidades no dominio e
+  integracoes externas em infrastructure.
+  Diretrizes: Clean Code, SOLID proporcional, KISS, DRY e YAGNI. Design patterns
+  so devem ser introduzidos para variacao ou repeticao demonstrada.
+  Seguranca: nunca registrar ou retornar segredos, PII, payloads brutos, query
+  strings ou stack traces ao cliente; diagnosticos internos devem ser
+  correlacionaveis por request/trace/span/incident id.
+  Qualidade: OpenSpec estrito, Ruff, mypy, pytest, cobertura, OpenAPI, auditoria
+  de dependencias e build de container compoem o gate de entrega.
+
+rules:
+  proposal:
+    - Declare impacto observavel, riscos, non-goals e compatibilidade quando o escopo puder expandir.
+    - Classifique cada capacidade nova ou modificada antes de iniciar implementacao.
+  specs:
+    - Cada requirement deve usar SHALL ou MUST e possuir ao menos um Scenario com WHEN e THEN.
+    - Especifique comportamento observavel; detalhes de arquivos e classes pertencem ao design.
+    - Inclua cenarios de erro, privacidade, idempotencia e degradacao quando aplicaveis.
+  design:
+    - Registre alternativas e trade-offs para seguranca, consistencia, compatibilidade, rollback e observabilidade.
+    - Mapeie design patterns somente a problemas concretos e evite abstracoes especulativas.
+  tasks:
+    - Cada checkbox deve ser verificavel por comando, teste ou inspecao objetiva.
+    - Marque como concluida somente a tarefa cuja implementacao e evidencia estejam completas.
+
+operations:
+  apply:
+    guidance:
+      - Leia proposal, specs, design e tasks antes de editar a implementacao.
+      - Atualize o artefato primeiro se a implementacao revelar divergencia de contrato.
+      - Preserve mudancas pre-existentes e mantenha o escopo dentro desta API.
+  archive:
+    guidance:
+      - Arquive somente com todas as tarefas concluidas e o gate completo aprovado.
+      - Sincronize deltas nas specs canonicas e registre riscos residuais e evidencias.

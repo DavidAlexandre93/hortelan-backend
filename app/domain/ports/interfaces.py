@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from app.domain.entities.models import IrrigationCommand, LedgerRecord, TelemetryReading
+from app.domain.entities.models import (
+    IdempotencyRecord,
+    IrrigationCommand,
+    LedgerRecord,
+    OutboxEvent,
+    TelemetryReading,
+)
 
 
 class TelemetryPublisherPort(ABC):
@@ -29,12 +35,31 @@ class BlockchainPort(ABC):
 
 class RelationalTelemetryRepositoryPort(ABC):
     @abstractmethod
-    async def save(self, reading: TelemetryReading) -> None: ...
+    async def save_with_outbox(self, reading: TelemetryReading) -> str: ...
 
     @abstractmethod
-    async def list_recent(self, limit: int = 20, device_id: str | None = None) -> list[TelemetryReading]: ...
+    async def list_recent(
+        self, limit: int = 20, device_id: str | None = None
+    ) -> list[TelemetryReading]: ...
+
+    @abstractmethod
+    async def list_pending_outbox(self, limit: int = 100) -> list[OutboxEvent]: ...
+
+    @abstractmethod
+    async def mark_outbox_published(self, event_id: str) -> None: ...
 
 
 class DocumentTelemetryRepositoryPort(ABC):
     @abstractmethod
     async def save(self, reading: TelemetryReading) -> None: ...
+
+
+class IdempotencyRepositoryPort(ABC):
+    @abstractmethod
+    async def reserve(self, record: IdempotencyRecord) -> tuple[bool, IdempotencyRecord]: ...
+
+    @abstractmethod
+    async def complete(self, key: str, response: dict[str, Any]) -> None: ...
+
+    @abstractmethod
+    async def mark_unknown(self, key: str) -> None: ...

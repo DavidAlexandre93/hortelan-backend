@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -6,8 +7,8 @@ from typing import Any
 from redis.asyncio import Redis
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
-from app.core.observability import metrics_registry
 from app.core.exceptions import TransientIntegrationError
+from app.core.observability import metrics_registry
 from app.core.settings import Settings
 from app.domain.ports.interfaces import CachePort
 
@@ -16,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class RedisCacheAdapter(CachePort):
     def __init__(self, settings: Settings) -> None:
+        self._timeout_seconds = settings.external_timeout_seconds
         self.client = Redis.from_url(settings.redis_url, decode_responses=True)
         self._fallback_store: dict[str, dict[str, Any]] = {}
         self._circuit_breaker = CircuitBreaker(
@@ -38,15 +40,20 @@ class RedisCacheAdapter(CachePort):
 
         started = time.perf_counter()
         try:
-            await self.client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
+            async with asyncio.timeout(self._timeout_seconds):
+                await self.client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
         except Exception as exc:
             self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call('redis.set', time.perf_counter() - started, ok=False)
+            metrics_registry.track_external_call(
+                'redis.set', time.perf_counter() - started, ok=False
+            )
             logger.warning('Falha ao gravar no Redis; mantendo fallback em memória')
             raise TransientIntegrationError('Falha ao gravar cache no Redis') from exc
         else:
             self._circuit_breaker.on_success()
-            metrics_registry.track_external_call('redis.set', time.perf_counter() - started, ok=True)
+            metrics_registry.track_external_call(
+                'redis.set', time.perf_counter() - started, ok=True
+            )
 
     async def get(self, key: str) -> dict[str, Any] | None:
         try:
@@ -56,17 +63,27 @@ class RedisCacheAdapter(CachePort):
 
         started = time.perf_counter()
         try:
-            value = await self.client.get(key)
+            async with asyncio.timeout(self._timeout_seconds):
+                value = await self.client.get(key)
         except Exception:
             logger.warning('Falha ao ler Redis; retornando fallback em memória')
             self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call('redis.get', time.perf_counter() - started, ok=False)
+            metrics_registry.track_external_call(
+                'redis.get', time.perf_counter() - started, ok=False
+            )
             return self._fallback_store.get(key)
 
         self._circuit_breaker.on_success()
         metrics_registry.track_external_call('redis.get', time.perf_counter() - started, ok=True)
         if value:
-            parsed = json.loads(value)
+            try:
+                parsed = json.loads(value)
+            except json.JSONDecodeError:
+                logger.warning('Valor Redis ignorado por conter JSON invalido')
+                return self._fallback_store.get(key)
+            if not isinstance(parsed, dict):
+                logger.warning('Valor Redis ignorado por nao ser um objeto JSON')
+                return self._fallback_store.get(key)
             self._fallback_store[key] = parsed
             return parsed
         return self._fallback_store.get(key)

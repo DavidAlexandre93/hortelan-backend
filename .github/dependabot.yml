@@ -22,12 +22,12 @@ updates:
         patterns:
           - "fastapi"
           - "uvicorn*"
-          - "httpx"
+          - "httpx*"
       data-stack:
         patterns:
           - "sqlalchemy"
           - "aiosqlite"
-          - "motor"
+          - "pymongo"
           - "redis"
 
   - package-ecosystem: "github-actions"

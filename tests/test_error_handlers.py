@@ -37,7 +37,12 @@ def test_api_error_returns_diagnostic_payload():
     response = asyncio.run(
         handlers[ApiError](
             request,
-            ApiError(message='Falha de domínio', code='DOMAIN_ERROR', status_code=409, details={'entity': 'order'}),
+            ApiError(
+                message='Falha de domínio',
+                code='DOMAIN_ERROR',
+                status_code=409,
+                details={'entity': 'order'},
+            ),
         )
     )
 
@@ -45,7 +50,8 @@ def test_api_error_returns_diagnostic_payload():
     payload = response.body.decode('utf-8')
     assert 'DOMAIN_ERROR' in payload
     assert '"status_code":409' in payload
-    assert '"path":"/domain-error"' in payload
+    assert '"entity":"order"' in payload
+    assert '/domain-error' not in payload
 
 
 def test_validation_error_returns_structured_details():
@@ -79,5 +85,7 @@ def test_unhandled_exception_returns_internal_error_payload():
     assert response.status_code == 500
     payload = response.body.decode('utf-8')
     assert 'INTERNAL_SERVER_ERROR' in payload
-    assert 'RuntimeError' in payload
-    assert 'traceback' in payload
+    assert 'Tente novamente mais tarde' in payload
+    assert 'RuntimeError' not in payload
+    assert 'kaboom' not in payload
+    assert 'traceback' not in payload

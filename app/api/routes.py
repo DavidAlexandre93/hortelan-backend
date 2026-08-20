@@ -1,11 +1,14 @@
-from datetime import datetime
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 
 from app.api.contracts import (
     AckResponse,
+    AckStatus,
     CommandSnapshotOut,
     DeviceSnapshotOut,
+    ErrorEnvelopeOut,
     IrrigationCommandIn,
     LedgerRecordIn,
     ProductModuleCoverageOut,
@@ -25,18 +28,33 @@ from app.application.services.coverage_service import (
     _build_requirement_detail,
     _slugify_requirement,
 )
-from app.core.dependencies import get_container
+from app.core.dependencies import Container, get_container
 from app.core.security import require_api_key
-from app.domain.entities.models import IrrigationCommand, LedgerRecord, TelemetryReading
+from app.domain.entities.models import IrrigationCommand, LedgerRecord, TelemetryReading, utc_now
 
 router = APIRouter(prefix='/api/v1')
+ERROR_RESPONSES: dict[int | str, dict[str, Any]] = {
+    400: {'model': ErrorEnvelopeOut, 'description': 'Requisicao invalida.'},
+    401: {'model': ErrorEnvelopeOut, 'description': 'Autenticacao necessaria.'},
+    409: {'model': ErrorEnvelopeOut, 'description': 'Conflito idempotente.'},
+    422: {'model': ErrorEnvelopeOut, 'description': 'Contrato de entrada invalido.'},
+    429: {'model': ErrorEnvelopeOut, 'description': 'Limite de requisicoes excedido.'},
+    500: {'model': ErrorEnvelopeOut, 'description': 'Falha interna segura.'},
+    502: {'model': ErrorEnvelopeOut, 'description': 'Falha de dependencia externa.'},
+    503: {'model': ErrorEnvelopeOut, 'description': 'Dependencia temporariamente indisponivel.'},
+}
 
 
-def _container():
+def _container() -> Container:
     return get_container()
 
 
-@router.post('/telemetry', response_model=AckResponse, tags=['telemetria'])
+@router.post(
+    '/telemetry',
+    response_model=AckResponse,
+    tags=['telemetria'],
+    responses=ERROR_RESPONSES,
+)
 async def ingest_telemetry(payload: TelemetryIn) -> AckResponse:
     await _container().ingest_telemetry_use_case.execute(
         TelemetryReading(
@@ -47,7 +65,7 @@ async def ingest_telemetry(payload: TelemetryIn) -> AckResponse:
             metadata=payload.metadata,
         )
     )
-    return AckResponse(status='telemetry_ingested', timestamp=datetime.utcnow())
+    return AckResponse(status=AckStatus.TELEMETRY_INGESTED, timestamp=utc_now())
 
 
 @router.get('/telemetry', response_model=list[TelemetryOut], tags=['telemetria'])
@@ -69,7 +87,9 @@ async def list_telemetry(
     ]
 
 
-@router.get('/telemetry/latest/{device_id}', response_model=TelemetryOut | None, tags=['telemetria'])
+@router.get(
+    '/telemetry/latest/{device_id}', response_model=TelemetryOut | None, tags=['telemetria']
+)
 async def latest_telemetry(device_id: str) -> TelemetryOut | None:
     cached = await _container().get_cached_telemetry_use_case.execute(device_id)
     if not cached:
@@ -77,19 +97,46 @@ async def latest_telemetry(device_id: str) -> TelemetryOut | None:
     return TelemetryOut.model_validate(cached)
 
 
-@router.post('/commands', response_model=AckResponse, tags=['comandos'], dependencies=[Depends(require_api_key)])
-async def dispatch_command(payload: IrrigationCommandIn) -> AckResponse:
-    await _container().dispatch_irrigation_command_use_case.execute(
-        IrrigationCommand(
-            device_id=payload.device_id,
-            action=payload.action,
-            duration_seconds=payload.duration_seconds,
+@router.post(
+    '/commands',
+    response_model=AckResponse,
+    tags=['comandos'],
+    dependencies=[Depends(require_api_key)],
+    responses=ERROR_RESPONSES,
+)
+async def dispatch_command(
+    payload: IrrigationCommandIn,
+    idempotency_key: Annotated[str | None, Header(alias='Idempotency-Key')] = None,
+) -> AckResponse:
+    container = _container()
+
+    async def action() -> dict[str, Any]:
+        await container.dispatch_irrigation_command_use_case.execute(
+            IrrigationCommand(
+                device_id=payload.device_id,
+                action=payload.action,
+                duration_seconds=payload.duration_seconds,
+                idempotency_key=idempotency_key or '',
+            )
         )
+        return AckResponse(
+            status=AckStatus.COMMAND_DISPATCHED,
+            timestamp=utc_now(),
+            idempotency_key=idempotency_key,
+        ).model_dump(mode='json')
+
+    result = await container.idempotency_service.execute(
+        key=idempotency_key,
+        operation='commands.dispatch',
+        payload=payload.model_dump(mode='json'),
+        action=action,
     )
-    return AckResponse(status='command_dispatched', timestamp=datetime.utcnow())
+    return AckResponse.model_validate(result)
 
 
-@router.get('/commands/latest/{device_id}', response_model=CommandSnapshotOut | None, tags=['comandos'])
+@router.get(
+    '/commands/latest/{device_id}', response_model=CommandSnapshotOut | None, tags=['comandos']
+)
 async def latest_command(device_id: str) -> CommandSnapshotOut | None:
     cached = await _container().get_cached_command_use_case.execute(device_id)
     if not cached:
@@ -102,45 +149,84 @@ async def latest_command(device_id: str) -> CommandSnapshotOut | None:
     return CommandSnapshotOut.model_validate(command_payload)
 
 
-@router.post('/ledger', response_model=AckResponse, tags=['ledger'], dependencies=[Depends(require_api_key)])
-async def register_ledger(payload: LedgerRecordIn) -> AckResponse:
-    await _container().register_ledger_record_use_case.execute(
-        LedgerRecord(record_id=payload.record_id, payload=payload.payload)
+@router.post(
+    '/ledger',
+    response_model=AckResponse,
+    tags=['ledger'],
+    dependencies=[Depends(require_api_key)],
+    responses=ERROR_RESPONSES,
+)
+async def register_ledger(
+    payload: LedgerRecordIn,
+    idempotency_key: Annotated[str | None, Header(alias='Idempotency-Key')] = None,
+) -> AckResponse:
+    container = _container()
+
+    async def action() -> dict[str, Any]:
+        await container.register_ledger_record_use_case.execute(
+            LedgerRecord(record_id=payload.record_id, payload=payload.payload)
+        )
+        return AckResponse(
+            status=AckStatus.LEDGER_REGISTERED,
+            timestamp=utc_now(),
+            idempotency_key=idempotency_key,
+        ).model_dump(mode='json')
+
+    result = await container.idempotency_service.execute(
+        key=idempotency_key,
+        operation='ledger.register',
+        payload=payload.model_dump(mode='json'),
+        action=action,
     )
-    return AckResponse(status='ledger_registered', timestamp=datetime.utcnow())
+    return AckResponse.model_validate(result)
 
 
-@router.get('/devices/{device_id}/snapshot', response_model=DeviceSnapshotOut, tags=['dispositivos'])
+@router.get(
+    '/devices/{device_id}/snapshot', response_model=DeviceSnapshotOut, tags=['dispositivos']
+)
 async def get_device_snapshot(device_id: str) -> DeviceSnapshotOut:
     snapshot = await _container().get_device_snapshot_use_case.execute(device_id)
     return DeviceSnapshotOut.model_validate(snapshot)
 
 
-@router.get('/requirements', response_model=list[RequirementCoverageOut], tags=['cobertura estratégica'])
+@router.get(
+    '/requirements', response_model=list[RequirementCoverageOut], tags=['cobertura estratégica']
+)
 async def list_requirement_coverage() -> list[RequirementCoverageOut]:
     return _container().coverage_service.list_requirement_coverage()
 
 
-@router.get('/strategic/coverage', response_model=StrategicCoverageReportOut, tags=['cobertura estratégica'])
+@router.get(
+    '/strategic/coverage', response_model=StrategicCoverageReportOut, tags=['cobertura estratégica']
+)
 async def strategic_coverage_report() -> StrategicCoverageReportOut:
     return _container().coverage_service.strategic_coverage_report()
 
 
-@router.get('/product/readiness', response_model=ProductReadinessReportOut, tags=['cobertura estratégica'])
+@router.get(
+    '/product/readiness', response_model=ProductReadinessReportOut, tags=['cobertura estratégica']
+)
 async def product_readiness_report() -> ProductReadinessReportOut:
     return _container().coverage_service.product_readiness_report()
 
 
-@router.get('/product/modules/{module_slug}', response_model=ProductModuleCoverageOut, tags=['cobertura estratégica'])
+@router.get(
+    '/product/modules/{module_slug}',
+    response_model=ProductModuleCoverageOut,
+    tags=['cobertura estratégica'],
+)
 async def product_module_detail(module_slug: str) -> ProductModuleCoverageOut:
     return _container().coverage_service.product_module_detail(module_slug)
 
 
-def _requirement_endpoint(requirement_id: str, title: str):
+def _requirement_endpoint(
+    requirement_id: str,
+    title: str,
+) -> Callable[[], Awaitable[RequirementDetailOut]]:
     async def _handler() -> RequirementDetailOut:
         return _container().coverage_service.requirement_detail(requirement_id, title)
 
-    _handler.__name__ = f"requirement_{requirement_id.replace('.', '_')}"
+    _handler.__name__ = f'requirement_{requirement_id.replace(".", "_")}'
     return _handler
 
 
@@ -157,12 +243,12 @@ for _requirement_id, _title in REQUIREMENT_CATALOG:
 
 
 __all__ = [
-    "IMPLEMENTED_REQUIREMENTS",
-    "PRODUCT_MODULES",
-    "REQUIREMENT_CATALOG",
-    "STRATEGIC_COVERAGE_MATRIX",
-    "STRATEGIC_NEXT_STEPS",
-    "_build_requirement_detail",
-    "_slugify_requirement",
-    "router",
+    'IMPLEMENTED_REQUIREMENTS',
+    'PRODUCT_MODULES',
+    'REQUIREMENT_CATALOG',
+    'STRATEGIC_COVERAGE_MATRIX',
+    'STRATEGIC_NEXT_STEPS',
+    '_build_requirement_detail',
+    '_slugify_requirement',
+    'router',
 ]

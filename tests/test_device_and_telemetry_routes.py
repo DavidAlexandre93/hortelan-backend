@@ -4,6 +4,8 @@ from datetime import datetime
 import pytest
 
 import app.api.routes as routes
+from app.application.use_cases.iot.get_device_snapshot_use_case import GetDeviceSnapshotUseCase
+from app.application.use_cases.iot.list_telemetry_use_case import ListTelemetryUseCase
 from app.domain.entities.models import TelemetryReading
 
 pytestmark = pytest.mark.integration
@@ -18,6 +20,17 @@ class _FakeCache:
 
 
 class _FakeRelationalRepo:
+    async def save_with_outbox(self, reading):
+        _ = reading
+        return 'event-1'
+
+    async def list_pending_outbox(self, limit=100):
+        _ = limit
+        return []
+
+    async def mark_outbox_published(self, event_id):
+        _ = event_id
+
     async def list_recent(self, limit: int, device_id: str | None = None):
         _ = (limit, device_id)
         return [
@@ -53,6 +66,8 @@ class _FakeContainer:
             }
         )
         self.relational_repo = _FakeRelationalRepo()
+        self.list_telemetry_use_case = ListTelemetryUseCase(self.relational_repo)
+        self.get_device_snapshot_use_case = GetDeviceSnapshotUseCase(self.cache)
 
 
 def test_list_telemetry_maps_domain_entities_to_contract(monkeypatch):
@@ -71,5 +86,7 @@ def test_device_snapshot_returns_cached_telemetry_and_command(monkeypatch):
     response = asyncio.run(routes.get_device_snapshot('device-1'))
 
     assert response.device_id == 'device-1'
-    assert response.telemetry['metadata']['origin'] == 'cache'
-    assert response.command['action'] == 'irrigate'
+    assert response.telemetry is not None
+    assert response.command is not None
+    assert response.telemetry.metadata['origin'] == 'cache'
+    assert response.command.action == 'irrigate'
