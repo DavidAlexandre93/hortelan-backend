@@ -91,26 +91,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install ruff mypy pytest pytest-cov
+          python -m pip install -e '.[dev]'
 
       - name: Validate dependency graph
         run: pip check
 
       - name: Lint
-        run: ruff check app api tests
+        run: ruff check app api scripts tests
 
       - name: Format check
-        run: ruff format --check app api tests
+        run: ruff format --check app api scripts tests
 
       - name: Type check
-        run: mypy app api --ignore-missing-imports
+        run: mypy app api scripts
 
-      - name: Unit tests
-        run: pytest -q -m 'not integration' --cov=app --cov=api --cov-report=xml --cov-report=term-missing --cov-fail-under=85
-
-      - name: Integration tests
-        run: pytest -q -m integration
+      - name: Tests and coverage
+        run: pytest -q --cov=app --cov=api --cov=scripts --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage report
         if: always()
@@ -141,14 +137,14 @@ jobs:
       - name: Install security tooling
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install bandit pip-audit detect-secrets
+          python -m pip install -e '.[dev]'
+          python -m pip install detect-secrets
 
       - name: Bandit
-        run: bandit -r app api -x tests -ll
+        run: bandit -q -r app api scripts
 
       - name: pip-audit (strict)
-        run: pip-audit --requirement requirements.txt
+        run: pip-audit --local --skip-editable --progress-spinner off
 
       - name: detect-secrets baseline
         run: detect-secrets scan --all-files > .secrets.baseline

@@ -32,7 +32,7 @@ def percentile(values: list[float], q: float) -> float:
 
 async def run_request(client: httpx.AsyncClient, base_url: str, endpoint: str) -> Result:
     started = time.perf_counter()
-    response = await client.get(f"{base_url}{endpoint}")
+    response = await client.get(f'{base_url}{endpoint}')
     elapsed = time.perf_counter() - started
     return Result(elapsed=elapsed, status_code=response.status_code)
 
@@ -45,7 +45,8 @@ async def worker(
 ) -> list[Result]:
     results: list[Result] = []
     for _ in range(iterations):
-        endpoint = random.choice(endpoints)
+        # Amostragem de carga; nao existe uso criptografico.
+        endpoint = random.choice(endpoints)  # nosec B311
         results.append(await run_request(client, base_url, endpoint))
     return results
 
@@ -62,7 +63,9 @@ async def main() -> None:
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         started = time.perf_counter()
-        tasks = [worker(client, args.base_url, endpoints, per_worker) for _ in range(args.concurrency)]
+        tasks = [
+            worker(client, args.base_url, endpoints, per_worker) for _ in range(args.concurrency)
+        ]
         nested = await asyncio.gather(*tasks)
         total_elapsed = time.perf_counter() - started
 
@@ -72,8 +75,8 @@ async def main() -> None:
 
     print('--- Baseline de carga ---')
     print(f'total_requests={len(results)}')
-    print(f'throughput_rps={len(results)/total_elapsed:.2f}')
-    print(f'error_rate={(len(errors)/len(results))*100:.2f}%')
+    print(f'throughput_rps={len(results) / total_elapsed:.2f}')
+    print(f'error_rate={(len(errors) / len(results)) * 100:.2f}%')
     print(f'latency_avg_ms={statistics.fmean(latencies_ms):.2f}')
     print(f'latency_p95_ms={percentile(latencies_ms, 0.95):.2f}')
     print(f'latency_p99_ms={percentile(latencies_ms, 0.99):.2f}')

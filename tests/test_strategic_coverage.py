@@ -1,13 +1,24 @@
-from app.api.routes import STRATEGIC_COVERAGE_MATRIX, STRATEGIC_NEXT_STEPS, strategic_coverage_report
+from app.api.routes import (
+    STRATEGIC_COVERAGE_MATRIX,
+    STRATEGIC_NEXT_STEPS,
+    strategic_coverage_report,
+)
 
 
 def test_strategic_coverage_matrix_has_expected_items():
     assert len(STRATEGIC_COVERAGE_MATRIX) == 12
-    assert any(item[0] == 'Integração com sensores e dispositivos IoT' for item in STRATEGIC_COVERAGE_MATRIX)
+    assert any(
+        item[0] == 'Integração com sensores e dispositivos IoT'
+        for item in STRATEGIC_COVERAGE_MATRIX
+    )
 
 
 def test_strategic_coverage_endpoint_payload_shape():
-    report = strategic_coverage_report.__wrapped__() if hasattr(strategic_coverage_report, '__wrapped__') else None
+    report = (
+        strategic_coverage_report.__wrapped__()
+        if hasattr(strategic_coverage_report, '__wrapped__')
+        else None
+    )
     if report is None:
         import asyncio
 

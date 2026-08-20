@@ -1,0 +1,4121 @@
+{
+  "components": {
+    "schemas": {
+      "AckResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "replayed": {
+            "default": false,
+            "title": "Replayed",
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AckStatus"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ],
+        "title": "AckResponse",
+        "type": "object"
+      },
+      "AckStatus": {
+        "enum": [
+          "telemetry_ingested",
+          "command_dispatched",
+          "ledger_registered"
+        ],
+        "title": "AckStatus",
+        "type": "string"
+      },
+      "CommandSnapshotOut": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/IrrigationAction"
+          },
+          "device_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 7200.0,
+            "title": "Duration Seconds",
+            "type": "integer"
+          },
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "device_id",
+          "action",
+          "duration_seconds",
+          "sent_at"
+        ],
+        "title": "CommandSnapshotOut",
+        "type": "object"
+      },
+      "DependencyStatus": {
+        "enum": [
+          "ok",
+          "error"
+        ],
+        "title": "DependencyStatus",
+        "type": "string"
+      },
+      "DeviceSnapshotOut": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandSnapshotOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "device_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "telemetry": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TelemetryOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "device_id"
+        ],
+        "title": "DeviceSnapshotOut",
+        "type": "object"
+      },
+      "ErrorBodyOut": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/ErrorDiagnosticsOut"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "retryable": {
+            "default": false,
+            "title": "Retryable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "diagnostics"
+        ],
+        "title": "ErrorBodyOut",
+        "type": "object"
+      },
+      "ErrorDiagnosticsOut": {
+        "additionalProperties": false,
+        "properties": {
+          "incident_id": {
+            "title": "Incident Id",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "span_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span Id"
+          },
+          "status_code": {
+            "maximum": 599.0,
+            "minimum": 400.0,
+            "title": "Status Code",
+            "type": "integer"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "trace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trace Id"
+          }
+        },
+        "required": [
+          "timestamp",
+          "status_code",
+          "incident_id"
+        ],
+        "title": "ErrorDiagnosticsOut",
+        "type": "object"
+      },
+      "ErrorEnvelopeOut": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyOut"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorEnvelopeOut",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthOut": {
+        "additionalProperties": false,
+        "properties": {
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "environment",
+          "version",
+          "timestamp"
+        ],
+        "title": "HealthOut",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "enum": [
+          "ok",
+          "alive",
+          "ready",
+          "degraded",
+          "unavailable"
+        ],
+        "title": "HealthStatus",
+        "type": "string"
+      },
+      "IrrigationAction": {
+        "enum": [
+          "irrigate",
+          "stop"
+        ],
+        "title": "IrrigationAction",
+        "type": "string"
+      },
+      "IrrigationCommandIn": {
+        "additionalProperties": false,
+        "example": {
+          "action": "irrigate",
+          "device_id": "esp32-greenhouse-01",
+          "duration_seconds": 120
+        },
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/IrrigationAction",
+            "default": "irrigate",
+            "description": "Acao permitida no atuador."
+          },
+          "device_id": {
+            "description": "Identificador do dispositivo que recebera o comando.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "description": "Duracao do comando em segundos.",
+            "exclusiveMinimum": 0.0,
+            "maximum": 7200.0,
+            "title": "Duration Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "device_id",
+          "duration_seconds"
+        ],
+        "title": "IrrigationCommandIn",
+        "type": "object"
+      },
+      "LedgerRecordIn": {
+        "additionalProperties": false,
+        "example": {
+          "payload": {
+            "device_id": "esp32-greenhouse-01",
+            "type": "telemetry_ingested"
+          },
+          "record_id": "evt-2026-02-telemetry-001"
+        },
+        "properties": {
+          "payload": {
+            "additionalProperties": true,
+            "description": "Conteudo JSON serializavel do evento registrado.",
+            "maxProperties": 64,
+            "minProperties": 1,
+            "title": "Payload",
+            "type": "object"
+          },
+          "record_id": {
+            "description": "Identificador unico do evento no ledger.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Record Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "record_id",
+          "payload"
+        ],
+        "title": "LedgerRecordIn",
+        "type": "object"
+      },
+      "LivenessOut": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "timestamp"
+        ],
+        "title": "LivenessOut",
+        "type": "object"
+      },
+      "ProductModuleCoverageOut": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "existing_endpoints": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Existing Endpoints",
+            "type": "array"
+          },
+          "implemented": {
+            "title": "Implemented",
+            "type": "boolean"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "stage": {
+            "title": "Stage",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "stage",
+          "status",
+          "implemented",
+          "endpoint",
+          "notes"
+        ],
+        "title": "ProductModuleCoverageOut",
+        "type": "object"
+      },
+      "ProductReadinessReportOut": {
+        "additionalProperties": false,
+        "properties": {
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/ProductModuleCoverageOut"
+            },
+            "title": "Modules",
+            "type": "array"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "summary",
+          "modules"
+        ],
+        "title": "ProductReadinessReportOut",
+        "type": "object"
+      },
+      "ReadinessOut": {
+        "additionalProperties": false,
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DependencyStatus"
+            },
+            "title": "Checks",
+            "type": "object"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks",
+          "environment",
+          "version",
+          "timestamp"
+        ],
+        "title": "ReadinessOut",
+        "type": "object"
+      },
+      "RequirementCoverageOut": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "implemented": {
+            "title": "Implemented",
+            "type": "boolean"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "title",
+          "endpoint",
+          "implemented"
+        ],
+        "title": "RequirementCoverageOut",
+        "type": "object"
+      },
+      "RequirementDetailOut": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "implemented": {
+            "title": "Implemented",
+            "type": "boolean"
+          },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "requirement_id": {
+            "title": "Requirement Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requirement_id",
+          "title",
+          "endpoint",
+          "implemented",
+          "notes"
+        ],
+        "title": "RequirementDetailOut",
+        "type": "object"
+      },
+      "StrategicCoverageReportOut": {
+        "additionalProperties": false,
+        "properties": {
+          "matrix": {
+            "items": {
+              "$ref": "#/components/schemas/StrategicFeatureCoverageOut"
+            },
+            "title": "Matrix",
+            "type": "array"
+          },
+          "next_steps": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Next Steps",
+            "type": "array"
+          },
+          "overall_result": {
+            "title": "Overall Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "overall_result",
+          "matrix",
+          "next_steps"
+        ],
+        "title": "StrategicCoverageReportOut",
+        "type": "object"
+      },
+      "StrategicFeatureCoverageOut": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "title": "Evidence",
+            "type": "string"
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feature",
+          "status",
+          "evidence"
+        ],
+        "title": "StrategicFeatureCoverageOut",
+        "type": "object"
+      },
+      "TelemetryIn": {
+        "additionalProperties": false,
+        "example": {
+          "device_id": "esp32-greenhouse-01",
+          "metadata": {
+            "battery": 88,
+            "firmware": "1.0.4"
+          },
+          "moisture": 45.2,
+          "ph": 6.3,
+          "temperature": 24.8
+        },
+        "properties": {
+          "device_id": {
+            "description": "Identificador unico do dispositivo IoT.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "maxProperties": 32,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "moisture": {
+            "description": "Umidade do solo em percentual.",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Moisture",
+            "type": "number"
+          },
+          "ph": {
+            "description": "pH estimado do solo.",
+            "maximum": 14.0,
+            "minimum": 0.0,
+            "title": "Ph",
+            "type": "number"
+          },
+          "temperature": {
+            "description": "Temperatura em graus Celsius.",
+            "maximum": 100.0,
+            "minimum": -50.0,
+            "title": "Temperature",
+            "type": "number"
+          }
+        },
+        "required": [
+          "device_id",
+          "moisture",
+          "temperature",
+          "ph"
+        ],
+        "title": "TelemetryIn",
+        "type": "object"
+      },
+      "TelemetryOut": {
+        "additionalProperties": false,
+        "properties": {
+          "captured_at": {
+            "format": "date-time",
+            "title": "Captured At",
+            "type": "string"
+          },
+          "device_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Device Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "maxProperties": 32,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "moisture": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Moisture",
+            "type": "number"
+          },
+          "ph": {
+            "maximum": 14.0,
+            "minimum": 0.0,
+            "title": "Ph",
+            "type": "number"
+          },
+          "temperature": {
+            "maximum": 100.0,
+            "minimum": -50.0,
+            "title": "Temperature",
+            "type": "number"
+          }
+        },
+        "required": [
+          "device_id",
+          "moisture",
+          "temperature",
+          "ph",
+          "captured_at"
+        ],
+        "title": "TelemetryOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HortelanApiKey": {
+        "description": "Chave da API configurada pelo ambiente de execucao.",
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "email": "tech@hortelan.local",
+      "name": "Equipe Hortelan"
+    },
+    "description": "API da plataforma Hortelan para integracao IoT, ingestao de telemetria, envio de comandos e rastreabilidade de cobertura estrategica do produto.",
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "title": "Hortelan Backend",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/commands": {
+      "post": {
+        "operationId": "dispatch_command_api_v1_commands_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IrrigationCommandIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Requisicao invalida."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Autenticacao necessaria."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Conflito idempotente."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Contrato de entrada invalido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Limite de requisicoes excedido."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha interna segura."
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha de dependencia externa."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Dependencia temporariamente indisponivel."
+          }
+        },
+        "security": [
+          {
+            "HortelanApiKey": []
+          }
+        ],
+        "summary": "Dispatch Command",
+        "tags": [
+          "comandos"
+        ]
+      }
+    },
+    "/api/v1/commands/latest/{device_id}": {
+      "get": {
+        "operationId": "latest_command_api_v1_commands_latest__device_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CommandSnapshotOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Latest Command Api V1 Commands Latest  Device Id  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Command",
+        "tags": [
+          "comandos"
+        ]
+      }
+    },
+    "/api/v1/devices/{device_id}/snapshot": {
+      "get": {
+        "operationId": "get_device_snapshot_api_v1_devices__device_id__snapshot_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSnapshotOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Device Snapshot",
+        "tags": [
+          "dispositivos"
+        ]
+      }
+    },
+    "/api/v1/ledger": {
+      "post": {
+        "operationId": "register_ledger_api_v1_ledger_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerRecordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Requisicao invalida."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Autenticacao necessaria."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Conflito idempotente."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Contrato de entrada invalido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Limite de requisicoes excedido."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha interna segura."
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha de dependencia externa."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Dependencia temporariamente indisponivel."
+          }
+        },
+        "security": [
+          {
+            "HortelanApiKey": []
+          }
+        ],
+        "summary": "Register Ledger",
+        "tags": [
+          "ledger"
+        ]
+      }
+    },
+    "/api/v1/product/modules/{module_slug}": {
+      "get": {
+        "operationId": "product_module_detail_api_v1_product_modules__module_slug__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "module_slug",
+            "required": true,
+            "schema": {
+              "title": "Module Slug",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductModuleCoverageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Product Module Detail",
+        "tags": [
+          "cobertura estratégica"
+        ]
+      }
+    },
+    "/api/v1/product/readiness": {
+      "get": {
+        "operationId": "product_readiness_report_api_v1_product_readiness_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductReadinessReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Product Readiness Report",
+        "tags": [
+          "cobertura estratégica"
+        ]
+      }
+    },
+    "/api/v1/requirements": {
+      "get": {
+        "operationId": "list_requirement_coverage_api_v1_requirements_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RequirementCoverageOut"
+                  },
+                  "title": "Response List Requirement Coverage Api V1 Requirements Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Requirement Coverage",
+        "tags": [
+          "cobertura estratégica"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-1-cadastro-de-usu-rio": {
+      "get": {
+        "operationId": "requirement_1_1_api_v1_requirements_1_1_cadastro_de_usu_rio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-2-login": {
+      "get": {
+        "operationId": "requirement_1_2_api_v1_requirements_1_2_login_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-3-recupera-o-de-senha": {
+      "get": {
+        "operationId": "requirement_1_3_api_v1_requirements_1_3_recupera_o_de_senha_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-4-autentica-o-avan-ada": {
+      "get": {
+        "operationId": "requirement_1_4_api_v1_requirements_1_4_autentica_o_avan_ada_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-5-perfil-do-usu-rio": {
+      "get": {
+        "operationId": "requirement_1_5_api_v1_requirements_1_5_perfil_do_usu_rio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/1-6-gest-o-da-conta": {
+      "get": {
+        "operationId": "requirement_1_6_api_v1_requirements_1_6_gest_o_da_conta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 1.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/10-1-central-de-alertas": {
+      "get": {
+        "operationId": "requirement_10_1_api_v1_requirements_10_1_central_de_alertas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 10.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/10-2-tipos-de-alerta": {
+      "get": {
+        "operationId": "requirement_10_2_api_v1_requirements_10_2_tipos_de_alerta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 10.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/10-3-notifica-es": {
+      "get": {
+        "operationId": "requirement_10_3_api_v1_requirements_10_3_notifica_es_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 10.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/10-4-pol-tica-de-notifica-es": {
+      "get": {
+        "operationId": "requirement_10_4_api_v1_requirements_10_4_pol_tica_de_notifica_es_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 10.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/10-5-gest-o-de-incidentes": {
+      "get": {
+        "operationId": "requirement_10_5_api_v1_requirements_10_5_gest_o_de_incidentes_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 10.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/11-1-relat-rios-operacionais": {
+      "get": {
+        "operationId": "requirement_11_1_api_v1_requirements_11_1_relat_rios_operacionais_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 11.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/11-2-relat-rios-de-cultivo": {
+      "get": {
+        "operationId": "requirement_11_2_api_v1_requirements_11_2_relat_rios_de_cultivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 11.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/11-3-relat-rios-de-manuten-o": {
+      "get": {
+        "operationId": "requirement_11_3_api_v1_requirements_11_3_relat_rios_de_manuten_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 11.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/11-4-exporta-o-de-dados": {
+      "get": {
+        "operationId": "requirement_11_4_api_v1_requirements_11_4_exporta_o_de_dados_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 11.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/11-5-hist-rico-unificado": {
+      "get": {
+        "operationId": "requirement_11_5_api_v1_requirements_11_5_hist_rico_unificado_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 11.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-1-perfil-p-blico-comunidade": {
+      "get": {
+        "operationId": "requirement_12_1_api_v1_requirements_12_1_perfil_p_blico_comunidade_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-2-publica-es": {
+      "get": {
+        "operationId": "requirement_12_2_api_v1_requirements_12_2_publica_es_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-3-intera-o-social": {
+      "get": {
+        "operationId": "requirement_12_3_api_v1_requirements_12_3_intera_o_social_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-4-perguntas-e-respostas": {
+      "get": {
+        "operationId": "requirement_12_4_api_v1_requirements_12_4_perguntas_e_respostas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-5-feed-da-comunidade": {
+      "get": {
+        "operationId": "requirement_12_5_api_v1_requirements_12_5_feed_da_comunidade_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-6-sistema-de-reputa-o": {
+      "get": {
+        "operationId": "requirement_12_6_api_v1_requirements_12_6_sistema_de_reputa_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/12-7-modera-o": {
+      "get": {
+        "operationId": "requirement_12_7_api_v1_requirements_12_7_modera_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 12.7",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/13-1-templates-de-cultivo": {
+      "get": {
+        "operationId": "requirement_13_1_api_v1_requirements_13_1_templates_de_cultivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 13.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/13-2-templates-de-automa-o-compartilh-veis": {
+      "get": {
+        "operationId": "requirement_13_2_api_v1_requirements_13_2_templates_de_automa_o_compartilh_veis_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 13.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/13-3-receitas-de-solu-o-de-problemas": {
+      "get": {
+        "operationId": "requirement_13_3_api_v1_requirements_13_3_receitas_de_solu_o_de_problemas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 13.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/13-4-avalia-o-de-templates": {
+      "get": {
+        "operationId": "requirement_13_4_api_v1_requirements_13_4_avalia_o_de_templates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 13.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-1-cat-logo-de-produtos": {
+      "get": {
+        "operationId": "requirement_14_1_api_v1_requirements_14_1_cat_logo_de_produtos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-2-busca-e-filtros": {
+      "get": {
+        "operationId": "requirement_14_2_api_v1_requirements_14_2_busca_e_filtros_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-3-p-gina-de-produto": {
+      "get": {
+        "operationId": "requirement_14_3_api_v1_requirements_14_3_p_gina_de_produto_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-4-carrinho": {
+      "get": {
+        "operationId": "requirement_14_4_api_v1_requirements_14_4_carrinho_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-5-checkout": {
+      "get": {
+        "operationId": "requirement_14_5_api_v1_requirements_14_5_checkout_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-6-rea-do-cliente-pedidos": {
+      "get": {
+        "operationId": "requirement_14_6_api_v1_requirements_14_6_rea_do_cliente_pedidos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/14-7-recomenda-es-de-compra-contextuais": {
+      "get": {
+        "operationId": "requirement_14_7_api_v1_requirements_14_7_recomenda_es_de_compra_contextuais_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 14.7",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/15-1-programa-de-pontos": {
+      "get": {
+        "operationId": "requirement_15_1_api_v1_requirements_15_1_programa_de_pontos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 15.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/15-2-badges-e-conquistas": {
+      "get": {
+        "operationId": "requirement_15_2_api_v1_requirements_15_2_badges_e_conquistas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 15.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/15-3-cupons": {
+      "get": {
+        "operationId": "requirement_15_3_api_v1_requirements_15_3_cupons_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 15.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/15-4-desafios": {
+      "get": {
+        "operationId": "requirement_15_4_api_v1_requirements_15_4_desafios_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 15.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/16-1-planos-de-uso": {
+      "get": {
+        "operationId": "requirement_16_1_api_v1_requirements_16_1_planos_de_uso_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 16.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/16-2-gest-o-da-assinatura": {
+      "get": {
+        "operationId": "requirement_16_2_api_v1_requirements_16_2_gest_o_da_assinatura_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 16.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/16-3-controle-de-limites-por-plano": {
+      "get": {
+        "operationId": "requirement_16_3_api_v1_requirements_16_3_controle_de_limites_por_plano_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 16.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/17-1-compartilhar-horta": {
+      "get": {
+        "operationId": "requirement_17_1_api_v1_requirements_17_1_compartilhar_horta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 17.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/17-2-pap-is-e-permiss-es-rbac": {
+      "get": {
+        "operationId": "requirement_17_2_api_v1_requirements_17_2_pap_is_e_permiss_es_rbac_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 17.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/17-3-auditoria-de-a-es": {
+      "get": {
+        "operationId": "requirement_17_3_api_v1_requirements_17_3_auditoria_de_a_es_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 17.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-1-gest-o-de-usu-rios-admin": {
+      "get": {
+        "operationId": "requirement_18_1_api_v1_requirements_18_1_gest_o_de_usu_rios_admin_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-2-gest-o-de-dispositivos-e-cat-logo-iot": {
+      "get": {
+        "operationId": "requirement_18_2_api_v1_requirements_18_2_gest_o_de_dispositivos_e_cat_logo_iot_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-3-gest-o-de-conte-do-cms-leve": {
+      "get": {
+        "operationId": "requirement_18_3_api_v1_requirements_18_3_gest_o_de_conte_do_cms_leve_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-4-gest-o-da-comunidade": {
+      "get": {
+        "operationId": "requirement_18_4_api_v1_requirements_18_4_gest_o_da_comunidade_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-5-gest-o-da-loja": {
+      "get": {
+        "operationId": "requirement_18_5_api_v1_requirements_18_5_gest_o_da_loja_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-6-gest-o-de-assinaturas-e-faturamento": {
+      "get": {
+        "operationId": "requirement_18_6_api_v1_requirements_18_6_gest_o_de_assinaturas_e_faturamento_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/18-7-observabilidade-da-plataforma": {
+      "get": {
+        "operationId": "requirement_18_7_api_v1_requirements_18_7_observabilidade_da_plataforma_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 18.7",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/19-1-central-de-ajuda": {
+      "get": {
+        "operationId": "requirement_19_1_api_v1_requirements_19_1_central_de_ajuda_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 19.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/19-2-abertura-de-chamado": {
+      "get": {
+        "operationId": "requirement_19_2_api_v1_requirements_19_2_abertura_de_chamado_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 19.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/19-3-acompanhamento-de-chamados": {
+      "get": {
+        "operationId": "requirement_19_3_api_v1_requirements_19_3_acompanhamento_de_chamados_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 19.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/19-4-suporte-contextual": {
+      "get": {
+        "operationId": "requirement_19_4_api_v1_requirements_19_4_suporte_contextual_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 19.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/2-1-cadastro-de-horta": {
+      "get": {
+        "operationId": "requirement_2_1_api_v1_requirements_2_1_cadastro_de_horta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 2.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/2-2-estrutura-por-reas-setores": {
+      "get": {
+        "operationId": "requirement_2_2_api_v1_requirements_2_2_estrutura_por_reas_setores_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 2.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/2-3-cadastro-de-recipientes-unidades": {
+      "get": {
+        "operationId": "requirement_2_3_api_v1_requirements_2_3_cadastro_de_recipientes_unidades_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 2.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/2-4-mapa-visual-da-horta": {
+      "get": {
+        "operationId": "requirement_2_4_api_v1_requirements_2_4_mapa_visual_da_horta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 2.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/20-1-onboarding-guiado": {
+      "get": {
+        "operationId": "requirement_20_1_api_v1_requirements_20_1_onboarding_guiado_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 20.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/20-2-checklist-inicial": {
+      "get": {
+        "operationId": "requirement_20_2_api_v1_requirements_20_2_checklist_inicial_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 20.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/20-3-demo-modo-simulado": {
+      "get": {
+        "operationId": "requirement_20_3_api_v1_requirements_20_3_demo_modo_simulado_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 20.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/20-4-educa-o-contextual": {
+      "get": {
+        "operationId": "requirement_20_4_api_v1_requirements_20_4_educa_o_contextual_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 20.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/21-1-seguran-a-de-aplica-o": {
+      "get": {
+        "operationId": "requirement_21_1_api_v1_requirements_21_1_seguran_a_de_aplica_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 21.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/21-2-privacidade-e-consentimento": {
+      "get": {
+        "operationId": "requirement_21_2_api_v1_requirements_21_2_privacidade_e_consentimento_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 21.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/21-3-lgpd": {
+      "get": {
+        "operationId": "requirement_21_3_api_v1_requirements_21_3_lgpd_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 21.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/21-4-seguran-a-de-dispositivos": {
+      "get": {
+        "operationId": "requirement_21_4_api_v1_requirements_21_4_seguran_a_de_dispositivos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 21.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/22-1-prefer-ncias-da-plataforma": {
+      "get": {
+        "operationId": "requirement_22_1_api_v1_requirements_22_1_prefer_ncias_da_plataforma_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 22.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/22-2-prefer-ncias-de-cultivo": {
+      "get": {
+        "operationId": "requirement_22_2_api_v1_requirements_22_2_prefer_ncias_de_cultivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 22.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/22-3-prefer-ncias-de-notifica-o": {
+      "get": {
+        "operationId": "requirement_22_3_api_v1_requirements_22_3_prefer_ncias_de_notifica_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 22.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/23-1-integra-es-de-clima-e-geodados": {
+      "get": {
+        "operationId": "requirement_23_1_api_v1_requirements_23_1_integra_es_de_clima_e_geodados_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 23.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/23-2-integra-es-de-pagamento": {
+      "get": {
+        "operationId": "requirement_23_2_api_v1_requirements_23_2_integra_es_de_pagamento_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 23.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/23-3-integra-es-log-sticas": {
+      "get": {
+        "operationId": "requirement_23_3_api_v1_requirements_23_3_integra_es_log_sticas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 23.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/23-4-integra-es-de-mensageria": {
+      "get": {
+        "operationId": "requirement_23_4_api_v1_requirements_23_4_integra_es_de_mensageria_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 23.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/23-5-integra-es-iot-ecossistema": {
+      "get": {
+        "operationId": "requirement_23_5_api_v1_requirements_23_5_integra_es_iot_ecossistema_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 23.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/24-1-gest-o-de-m-ltiplas-unidades": {
+      "get": {
+        "operationId": "requirement_24_1_api_v1_requirements_24_1_gest_o_de_m_ltiplas_unidades_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 24.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/24-2-perfis-institucionais": {
+      "get": {
+        "operationId": "requirement_24_2_api_v1_requirements_24_2_perfis_institucionais_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 24.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/24-3-relat-rios-institucionais": {
+      "get": {
+        "operationId": "requirement_24_3_api_v1_requirements_24_3_relat_rios_institucionais_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 24.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/24-4-m-dulo-educacional": {
+      "get": {
+        "operationId": "requirement_24_4_api_v1_requirements_24_4_m_dulo_educacional_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 24.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/25-1-logs-e-auditoria": {
+      "get": {
+        "operationId": "requirement_25_1_api_v1_requirements_25_1_logs_e_auditoria_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 25.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/25-2-observabilidade": {
+      "get": {
+        "operationId": "requirement_25_2_api_v1_requirements_25_2_observabilidade_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 25.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/25-3-feature-flags": {
+      "get": {
+        "operationId": "requirement_25_3_api_v1_requirements_25_3_feature_flags_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 25.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/25-4-backup-e-recupera-o": {
+      "get": {
+        "operationId": "requirement_25_4_api_v1_requirements_25_4_backup_e_recupera_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 25.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/3-1-cadastro-de-planta-cultivo": {
+      "get": {
+        "operationId": "requirement_3_1_api_v1_requirements_3_1_cadastro_de_planta_cultivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 3.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/3-2-biblioteca-de-esp-cies": {
+      "get": {
+        "operationId": "requirement_3_2_api_v1_requirements_3_2_biblioteca_de_esp_cies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 3.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/3-3-planejamento-de-plantio": {
+      "get": {
+        "operationId": "requirement_3_3_api_v1_requirements_3_3_planejamento_de_plantio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 3.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/3-4-hist-rico-da-planta": {
+      "get": {
+        "operationId": "requirement_3_4_api_v1_requirements_3_4_hist_rico_da_planta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 3.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/3-5-status-de-sa-de-da-planta": {
+      "get": {
+        "operationId": "requirement_3_5_api_v1_requirements_3_5_status_de_sa_de_da_planta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 3.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-1-cadastro-de-dispositivos-iot": {
+      "get": {
+        "operationId": "requirement_4_1_api_v1_requirements_4_1_cadastro_de_dispositivos_iot_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-2-cadastro-de-sensores": {
+      "get": {
+        "operationId": "requirement_4_2_api_v1_requirements_4_2_cadastro_de_sensores_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-3-cadastro-de-atuadores": {
+      "get": {
+        "operationId": "requirement_4_3_api_v1_requirements_4_3_cadastro_de_atuadores_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-4-estado-e-conectividade-do-dispositivo": {
+      "get": {
+        "operationId": "requirement_4_4_api_v1_requirements_4_4_estado_e_conectividade_do_dispositivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-5-telemetria-em-tempo-real": {
+      "get": {
+        "operationId": "requirement_4_5_api_v1_requirements_4_5_telemetria_em_tempo_real_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/4-6-hist-rico-de-telemetria": {
+      "get": {
+        "operationId": "requirement_4_6_api_v1_requirements_4_6_hist_rico_de_telemetria_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 4.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/5-1-dashboard-geral": {
+      "get": {
+        "operationId": "requirement_5_1_api_v1_requirements_5_1_dashboard_geral_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 5.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/5-2-dashboard-por-horta": {
+      "get": {
+        "operationId": "requirement_5_2_api_v1_requirements_5_2_dashboard_por_horta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 5.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/5-3-dashboard-por-planta": {
+      "get": {
+        "operationId": "requirement_5_3_api_v1_requirements_5_3_dashboard_por_planta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 5.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/5-4-alertas-visuais": {
+      "get": {
+        "operationId": "requirement_5_4_api_v1_requirements_5_4_alertas_visuais_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 5.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/5-5-painel-operacional-em-tempo-real": {
+      "get": {
+        "operationId": "requirement_5_5_api_v1_requirements_5_5_painel_operacional_em_tempo_real_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 5.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-1-regras-por-condi-o": {
+      "get": {
+        "operationId": "requirement_6_1_api_v1_requirements_6_1_regras_por_condi_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-2-regras-por-agenda-hor-rio": {
+      "get": {
+        "operationId": "requirement_6_2_api_v1_requirements_6_2_regras_por_agenda_hor_rio_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-3-regras-h-bridas": {
+      "get": {
+        "operationId": "requirement_6_3_api_v1_requirements_6_3_regras_h_bridas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-4-templates-de-automa-o": {
+      "get": {
+        "operationId": "requirement_6_4_api_v1_requirements_6_4_templates_de_automa_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-5-simula-o-teste-de-regra": {
+      "get": {
+        "operationId": "requirement_6_5_api_v1_requirements_6_5_simula_o_teste_de_regra_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-6-logs-de-automa-o": {
+      "get": {
+        "operationId": "requirement_6_6_api_v1_requirements_6_6_logs_de_automa_o_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/6-7-modo-manual-override": {
+      "get": {
+        "operationId": "requirement_6_7_api_v1_requirements_6_7_modo_manual_override_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 6.7",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/7-1-agenda-de-tarefas": {
+      "get": {
+        "operationId": "requirement_7_1_api_v1_requirements_7_1_agenda_de_tarefas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 7.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/7-2-cria-o-de-tarefas-personalizadas": {
+      "get": {
+        "operationId": "requirement_7_2_api_v1_requirements_7_2_cria_o_de_tarefas_personalizadas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 7.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/7-3-lembretes-e-vencimentos": {
+      "get": {
+        "operationId": "requirement_7_3_api_v1_requirements_7_3_lembretes_e_vencimentos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 7.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/7-4-execu-o-e-evid-ncias": {
+      "get": {
+        "operationId": "requirement_7_4_api_v1_requirements_7_4_execu_o_e_evid_ncias_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 7.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/7-5-rotinas-autom-ticas-sugeridas": {
+      "get": {
+        "operationId": "requirement_7_5_api_v1_requirements_7_5_rotinas_autom_ticas_sugeridas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 7.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/8-1-integra-o-com-clima": {
+      "get": {
+        "operationId": "requirement_8_1_api_v1_requirements_8_1_integra_o_com_clima_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 8.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/8-2-impacto-no-cultivo": {
+      "get": {
+        "operationId": "requirement_8_2_api_v1_requirements_8_2_impacto_no_cultivo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 8.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/8-3-regras-usando-clima-externo": {
+      "get": {
+        "operationId": "requirement_8_3_api_v1_requirements_8_3_regras_usando_clima_externo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 8.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/8-4-hist-rico-clim-tico-correlacionado": {
+      "get": {
+        "operationId": "requirement_8_4_api_v1_requirements_8_4_hist_rico_clim_tico_correlacionado_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 8.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-1-recomenda-o-de-cuidados": {
+      "get": {
+        "operationId": "requirement_9_1_api_v1_requirements_9_1_recomenda_o_de_cuidados_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.1",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-2-diagn-stico-por-regras": {
+      "get": {
+        "operationId": "requirement_9_2_api_v1_requirements_9_2_diagn_stico_por_regras_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.2",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-3-diagn-stico-por-foto": {
+      "get": {
+        "operationId": "requirement_9_3_api_v1_requirements_9_3_diagn_stico_por_foto_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.3",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-4-identifica-o-de-esp-cie-por-foto": {
+      "get": {
+        "operationId": "requirement_9_4_api_v1_requirements_9_4_identifica_o_de_esp_cie_por_foto_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.4",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-5-assistente-virtual-hortelan": {
+      "get": {
+        "operationId": "requirement_9_5_api_v1_requirements_9_5_assistente_virtual_hortelan_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.5",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/requirements/9-6-score-de-sa-de-da-horta": {
+      "get": {
+        "operationId": "requirement_9_6_api_v1_requirements_9_6_score_de_sa_de_da_horta_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequirementDetailOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Cobertura do requisito 9.6",
+        "tags": [
+          "requirements"
+        ]
+      }
+    },
+    "/api/v1/strategic/coverage": {
+      "get": {
+        "operationId": "strategic_coverage_report_api_v1_strategic_coverage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrategicCoverageReportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Strategic Coverage Report",
+        "tags": [
+          "cobertura estratégica"
+        ]
+      }
+    },
+    "/api/v1/telemetry": {
+      "get": {
+        "operationId": "list_telemetry_api_v1_telemetry_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "device_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TelemetryOut"
+                  },
+                  "title": "Response List Telemetry Api V1 Telemetry Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Telemetry",
+        "tags": [
+          "telemetria"
+        ]
+      },
+      "post": {
+        "operationId": "ingest_telemetry_api_v1_telemetry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelemetryIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Requisicao invalida."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Autenticacao necessaria."
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Conflito idempotente."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Contrato de entrada invalido."
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Limite de requisicoes excedido."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha interna segura."
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Falha de dependencia externa."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelopeOut"
+                }
+              }
+            },
+            "description": "Dependencia temporariamente indisponivel."
+          }
+        },
+        "summary": "Ingest Telemetry",
+        "tags": [
+          "telemetria"
+        ]
+      }
+    },
+    "/api/v1/telemetry/latest/{device_id}": {
+      "get": {
+        "operationId": "latest_telemetry_api_v1_telemetry_latest__device_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "device_id",
+            "required": true,
+            "schema": {
+              "title": "Device Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TelemetryOut"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Latest Telemetry Api V1 Telemetry Latest  Device Id  Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Latest Telemetry",
+        "tags": [
+          "telemetria"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Estado da API",
+        "tags": [
+          "saude"
+        ]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "health_live_health_live_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LivenessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Live",
+        "tags": [
+          "saude"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "health_ready_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Health Ready",
+        "tags": [
+          "saude"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Ingestao e consulta de medicoes dos sensores.",
+      "name": "telemetria"
+    },
+    {
+      "description": "Envio e consulta de comandos dos dispositivos.",
+      "name": "comandos"
+    },
+    {
+      "description": "Estado consolidado por dispositivo.",
+      "name": "dispositivos"
+    },
+    {
+      "description": "Trilha operacional e de auditoria.",
+      "name": "ledger"
+    },
+    {
+      "description": "Cobertura de requisitos e prontidao dos modulos.",
+      "name": "cobertura estrategica"
+    },
+    {
+      "description": "Detalhes dos requisitos do catalogo.",
+      "name": "requirements"
+    },
+    {
+      "description": "Liveness, readiness e estado da aplicacao.",
+      "name": "saude"
+    }
+  ]
+}

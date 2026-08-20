@@ -1,14 +1,24 @@
-from datetime import datetime
+from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-
-class AckResponse(BaseModel):
-    status: str
-    timestamp: datetime
+from app.api.contracts.base import ApiModel, UtcDatetime
 
 
-class RequirementCoverageOut(BaseModel):
+class AckStatus(StrEnum):
+    TELEMETRY_INGESTED = 'telemetry_ingested'
+    COMMAND_DISPATCHED = 'command_dispatched'
+    LEDGER_REGISTERED = 'ledger_registered'
+
+
+class AckResponse(ApiModel):
+    status: AckStatus
+    timestamp: UtcDatetime
+    idempotency_key: str | None = None
+    replayed: bool = False
+
+
+class RequirementCoverageOut(ApiModel):
     requirement_id: str
     title: str
     endpoint: str
@@ -19,19 +29,19 @@ class RequirementDetailOut(RequirementCoverageOut):
     notes: str
 
 
-class StrategicFeatureCoverageOut(BaseModel):
+class StrategicFeatureCoverageOut(ApiModel):
     feature: str
     status: str
     evidence: str
 
 
-class StrategicCoverageReportOut(BaseModel):
+class StrategicCoverageReportOut(ApiModel):
     overall_result: str
     matrix: list[StrategicFeatureCoverageOut]
     next_steps: list[str]
 
 
-class ProductModuleCoverageOut(BaseModel):
+class ProductModuleCoverageOut(ApiModel):
     slug: str
     title: str
     stage: str
@@ -42,6 +52,6 @@ class ProductModuleCoverageOut(BaseModel):
     notes: str
 
 
-class ProductReadinessReportOut(BaseModel):
+class ProductReadinessReportOut(ApiModel):
     summary: str
     modules: list[ProductModuleCoverageOut]

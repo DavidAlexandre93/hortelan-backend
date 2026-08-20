@@ -1,17 +1,25 @@
-from fastapi import Header
+from hmac import compare_digest
+from typing import Annotated
+
+from fastapi import Security
+from fastapi.security import APIKeyHeader
 
 from app.core.exceptions import UnauthorizedError
 from app.core.settings import get_settings
 
+api_key_header = APIKeyHeader(
+    name='X-API-Key',
+    scheme_name='HortelanApiKey',
+    description='Chave da API configurada pelo ambiente de execucao.',
+    auto_error=False,
+)
 
-async def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+
+async def require_api_key(
+    x_api_key: Annotated[str | None, Security(api_key_header)] = None,
+) -> None:
     settings = get_settings()
+    expected = settings.api_key.get_secret_value()
 
-    if settings.api_key:
-        if x_api_key != settings.api_key:
-            raise UnauthorizedError('API key inválida ou ausente')
-        return
-
-    if settings.app_env.lower() == 'production' and settings.enforce_api_key_in_production:
-        raise UnauthorizedError('API key obrigatória em produção')
-
+    if expected and (x_api_key is None or not compare_digest(x_api_key, expected)):
+        raise UnauthorizedError('API key invalida ou ausente')

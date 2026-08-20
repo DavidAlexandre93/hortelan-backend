@@ -1,351 +1,171 @@
 # Hortelan Backend
 
-Backend do **Hortelan** desenvolvido com **FastAPI + Python 3.11** em **Arquitetura Hexagonal (Ports and Adapters)**, focado em integração com IoT e evolução incremental para módulos estratégicos de produto.
-
----
-
-## Sumário
-
-- [Visão geral](#visão-geral)
-- [Stack e integrações](#stack-e-integrações)
-- [Arquitetura](#arquitetura)
-- [Estrutura de pastas](#estrutura-de-pastas)
-- [Pré-requisitos](#pré-requisitos)
-- [Configuração rápida](#configuração-rápida)
-- [Execução local](#execução-local)
-- [Documentação da API (Swagger/OpenAPI)](#documentação-da-api-swaggeropenapi)
-- [Endpoints disponíveis](#endpoints-disponíveis)
-- [Exemplos de uso com cURL](#exemplos-de-uso-com-curl)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Observabilidade e monitoramento](#observabilidade-e-monitoramento)
-- [Próximas implementações documentais](#próximas-implementações-documentais)
-- [Testes e qualidade](#testes-e-qualidade)
-- [Deploy na Vercel](#deploy-na-vercel)
-- [CI/CD](#cicd)
-- [Cobertura estratégica do produto](#cobertura-estratégica-do-produto)
-- [Roadmap técnico sugerido](#roadmap-técnico-sugerido)
-- [Licença](#licença)
-
----
-
-## Visão geral
-
-Este serviço expõe APIs para:
-
-- ingestão de telemetria de dispositivos;
-- despacho de comandos de irrigação;
-- registro de eventos em ledger (Web3);
-- leitura de snapshots operacionais por dispositivo;
-- análise de cobertura de requisitos e prontidão de módulos do produto.
-
-A base atual está mais madura em **telemetria/comandos IoT**, com suporte de repositórios relacional + documental e cache distribuído. No código atual, há comunicação direta com o **AWS IoT Core** para publicação de comandos e publicação assíncrona da telemetria em Kafka, mas a camada analítica **OLAP** ainda não está implementada.
-
-## Stack e integrações
-
-- **API:** FastAPI
-- **Validação/configuração:** Pydantic + pydantic-settings
-- **Mensageria:** Kafka (`aiokafka`)
-- **Comandos IoT:** AWS IoT Core (`boto3`)
-- **Pipeline de telemetria atual:** persistência relacional + documental, cache e publicação assíncrona em Kafka
-- **Cache:** Redis (`redis`)
-- **Ledger / Blockchain:** Web3 (`web3`)
-- **Persistência relacional:** SQLAlchemy async + SQLite (default local)
-- **Persistência documental:** MongoDB (`motor`)
-- **Testes:** pytest + pytest-asyncio
+API FastAPI da plataforma Hortelan, organizada em arquitetura hexagonal para telemetria IoT,
+comandos de irrigacao, ledger e visoes operacionais. O projeto usa contratos estritos, OpenAPI
+3.1, idempotencia persistente, outbox transacional, logs JSON e OpenTelemetry.
 
 ## Arquitetura
 
-O projeto segue **Hexagonal Architecture** para reduzir acoplamento com frameworks/provedores.
-
-- **Domain**: entidades e contratos (ports)
-- **Application**: casos de uso e orquestração
-- **Infrastructure**: adapters externos e persistência
-- **API**: camada HTTP (rotas/schemas)
-- **Core**: configuração e composição de dependências
-
-## Estrutura de pastas
-
 ```text
-app/
-  api/
-    routes.py            # Façade de compatibilidade + roteador principal
-    contracts/           # Schemas por contexto (telemetry, commands, ledger...)
-    schemas.py           # Façade legada para contratos da API
-  application/
-    use_cases/
-      iot/               # Casos de uso de telemetria/comandos
-      governance/        # Casos de uso de trilha/auditoria (ledger)
-  core/
-    settings.py          # Configurações por ambiente
-    dependencies.py      # Container de dependências
-  domain/
-    entities/            # Modelos de domínio
-    ports/               # Interfaces de portas
-  infrastructure/
-    adapters/            # Kafka, Redis, AWS IoT, Web3
-    persistence/         # Repositórios SQL e Mongo
-  main.py                # App FastAPI + middlewares + lifespan
-
-api/index.py             # Entrada ASGI para Vercel
-tests/                   # Testes automatizados
-docs/                    # Documentação técnica complementar
+HTTP / DTOs -> Application / use cases -> Domain ports -> Infrastructure adapters
+                                                    |-> SQLAlchemy + SQLite/PostgreSQL
+                                                    |-> PyMongo Async / MongoDB
+                                                    |-> Redis, Kafka, AWS IoT e Web3
 ```
 
-## Pré-requisitos
+- `app/domain`: entidades e ports, sem dependencia de framework.
+- `app/application`: casos de uso e politicas de aplicacao.
+- `app/infrastructure`: adapters substituiveis e persistencia.
+- `app/api`: DTOs Pydantic estritos, rotas e handlers seguros.
+- `app/core`: settings, composicao, resiliência e observabilidade.
+- `openspec`: fonte SDD; mudancas ficam ativas ate a verificacao final.
 
-- Python **3.11+**
-- Poetry
-- (Opcional para cenário completo) Redis, Kafka, MongoDB e endpoint RPC EVM
+A decisao de manter a arquitetura hexagonal existente e introduzir apenas Repository,
+Adapter e pequenas policies segue KISS/YAGNI: novos patterns precisam resolver um problema
+observado, nao apenas aumentar a quantidade de abstracoes.
 
-## Configuração rápida
+## Inicio rapido
 
-1. **Instale as dependências**:
-
-   ```bash
-   poetry install
-   ```
-
-2. **Crie seu `.env`** (a partir dos exemplos da seção de variáveis).
-
-3. **Suba os serviços externos** necessários para o seu cenário (ou use defaults locais quando possível).
-
-## Execução local
+Requer Python 3.11 ou superior.
 
 ```bash
-poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+python -m venv .venv
+.venv/Scripts/python -m pip install --upgrade pip
+.venv/Scripts/python -m pip install -e ".[dev]"
+copy .env.example .env
+.venv/Scripts/uvicorn app.main:app --reload --port 8000
 ```
 
-Health check:
+Em Linux/macOS, use `.venv/bin/` e `cp`. A instalacao tambem funciona com `poetry install`.
+
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+- OpenAPI versionado: `docs/openapi.json`
+- Liveness: `GET /health/live`
+- Readiness: `GET /health/ready` (retorna 503 se a dependencia critica falhar)
+- Metricas: `GET /metrics`
+
+## Contratos e seguranca
+
+Todos os DTOs rejeitam campos desconhecidos, validam identificadores/limites e normalizam datas
+para UTC. Comandos e ledger exigem `Idempotency-Key` de 8 a 128 caracteres. Quando `API_KEY`
+estiver configurada, envie tambem `X-API-Key`; producao falha no startup sem chave por padrao.
 
 ```bash
-curl http://localhost:8000/health
-```
-
-## Documentação da API (Swagger/OpenAPI)
-
-Com o servidor em execução:
-
-- **Swagger UI:** `http://localhost:8000/docs`
-- **ReDoc:** `http://localhost:8000/redoc`
-- **OpenAPI JSON:** `http://localhost:8000/openapi.json`
-
-### O que já está disponível
-
-- Geração automática de schema OpenAPI via FastAPI.
-- Contratos de request/response baseados em Pydantic.
-- Navegação interativa dos endpoints na Swagger UI para testes rápidos.
-
-### Melhorias recomendadas para implementar
-
-- Adicionar **tags e descrições funcionais por domínio** (Telemetry, Commands, Ledger etc.).
-- Documentar **exemplos de payload** diretamente nos schemas Pydantic.
-- Configurar **segurança no OpenAPI** (ex.: Bearer/JWT) quando a autenticação for adicionada.
-- Versionar documentação e publicar schema em pipeline (artifact ou portal interno).
-
-## Endpoints disponíveis
-
-Base path principal: `/api/v1`
-
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/health` | Verifica status da aplicação e ambiente |
-| GET | `/health/live` | Liveness probe |
-| GET | `/health/ready` | Readiness probe |
-| GET | `/metrics` | Métricas Prometheus |
-| POST | `/api/v1/telemetry` | Ingestão de telemetria |
-| GET | `/api/v1/telemetry` | Lista telemetria com filtros |
-| GET | `/api/v1/telemetry/latest/{device_id}` | Última telemetria por dispositivo |
-| POST | `/api/v1/commands` | Envia comando de irrigação |
-| GET | `/api/v1/commands/latest/{device_id}` | Último comando enviado |
-| POST | `/api/v1/ledger` | Registra payload em ledger |
-| GET | `/api/v1/devices/{device_id}/snapshot` | Snapshot (telemetria + comando) |
-| GET | `/api/v1/requirements` | Catálogo de cobertura por requisito |
-| GET | `/api/v1/strategic/coverage` | Relatório de cobertura estratégica |
-| GET | `/api/v1/product/readiness` | Prontidão de módulos do produto |
-| GET | `/api/v1/product/modules/{module_slug}` | Detalhe de um módulo específico |
-
-## Exemplos de uso com cURL
-
-### 1) Ingerir telemetria
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/telemetry" \
+curl -X POST http://localhost:8000/api/v1/commands \
   -H "Content-Type: application/json" \
-  -d '{
-    "device_id": "sensor-01",
-    "moisture": 58.4,
-    "temperature": 25.1,
-    "ph": 6.4,
-    "metadata": {"zone": "canteiro-a"}
-  }'
+  -H "X-API-Key: $API_KEY" \
+  -H "Idempotency-Key: irrigation-2026-08-20-001" \
+  -d '{"device_id":"sensor-01","action":"irrigate","duration_seconds":120}'
 ```
 
-### 2) Enviar comando de irrigação
+Repetir a mesma chave e payload devolve o resultado salvo com `replayed: true`, sem repetir o
+efeito. Reutilizar a chave com outro payload retorna 409. Falha depois da reserva marca o outcome
+como incerto e impede uma repeticao cega.
+
+Erros publicos nunca incluem stack, classe interna, causa, credencial ou o valor de entrada
+invalido:
+
+```json
+{
+  "error": {
+    "code": "INFRASTRUCTURE_FAILURE",
+    "message": "Nao foi possivel concluir a operacao externa.",
+    "retryable": true,
+    "details": {},
+    "diagnostics": {
+      "timestamp": "2026-08-20T12:00:00Z",
+      "status_code": 502,
+      "incident_id": "referencia-segura",
+      "request_id": "request-seguro",
+      "trace_id": null,
+      "span_id": null
+    }
+  }
+}
+```
+
+## Observabilidade
+
+Cada linha de log e um objeto JSON allowlist-first com servico, ambiente, evento, severidade,
+request/trace/span/incident. Excecoes internas incluem classe, modulo, arquivo, funcao, linha,
+mensagem e stack completos depois de redaction de email, tokens, secrets, paths de usuario e query
+strings. Payloads e headers arbitrarios nao entram no log.
+
+OTEL so instala o exporter quando `OTEL_ENABLED=true` e `OTEL_EXPORTER_OTLP_ENDPOINT` esta
+configurado. Sem endpoint, nao existe exporter de console nem tentativa silenciosa de rede.
+As metricas Prometheus usam templates de rota para evitar cardinalidade por identificador.
+
+Consulte [runbook de incidentes](docs/runbook-observability.md) e
+[ADR de observabilidade](docs/adr/002-observability-and-safe-errors.md).
+
+## ACID e consistencia
+
+| Fluxo | Garantia |
+|---|---|
+| Telemetria SQL + evento outbox | ACID na mesma transacao local |
+| Publicacao Kafka | Eventual; outbox pendente permite reconciliacao |
+| Projecao Mongo e cache Redis | Eventual e degradavel |
+| Comandos AWS IoT | At-most-one effect por chave enquanto o store SQL estiver disponivel; outcome incerto e bloqueado |
+| Ledger Web3 | Resultado externo idempotentemente reservado; sem alegacao de transacao distribuida |
+
+Nao existe uma alegacao falsa de ACID entre SQL, Kafka, Mongo, Redis, AWS e blockchain. Veja
+[ADR de consistencia](docs/adr/003-acid-idempotency-and-outbox.md).
+
+## Configuracao
+
+As principais variaveis estao em `.env.example`:
+
+- aplicacao: `APP_NAME`, `APP_VERSION`, `APP_ENV`, `APP_PORT`, `LOG_LEVEL`;
+- seguranca: `API_KEY`, `ENFORCE_API_KEY_IN_PRODUCTION`, CORS e rate limit;
+- persistencia: `RELATIONAL_DB_URL`, `MONGO_URL`, `REDIS_URL`;
+- integracoes: Kafka, AWS IoT e Web3;
+- telemetria: `OTEL_*` e `ENABLE_METRICS`;
+- resiliência: timeout externo/health e parametros do circuit breaker.
+
+Secrets sao `SecretStr`, nunca devem ser commitados e devem vir do secret manager do ambiente.
+
+## Qualidade e testes
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/commands" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "device_id": "sensor-01",
-    "action": "irrigate",
-    "duration_seconds": 120
-  }'
+.venv/Scripts/ruff check app api scripts tests
+.venv/Scripts/ruff format --check app api scripts tests
+.venv/Scripts/mypy app api scripts
+.venv/Scripts/pytest -q --cov=app --cov=api --cov=scripts --cov-report=term-missing
+.venv/Scripts/bandit -q -r app api scripts
+.venv/Scripts/python -m pip_audit --local --skip-editable --progress-spinner off
+npx --yes @fission-ai/openspec@1.10.0 validate --all --strict --no-interactive
 ```
 
-### 3) Registrar no ledger
+O gate atual exige no minimo 90% global e os modulos criticos novos de idempotencia/contratos
+estao em 100%. O plano progressivo para statements, branches, functions e lines em 100% esta em
+[test-plan.md](openspec/changes/full-sdd-production-hardening/test-plan.md); cobertura nao e
+inflada removendo adapters ou scripts do denominador.
+
+O workflow `quality.yml` valida Conventional Commits, OpenSpec, Ruff, formato, MyPy, Bandit,
+OpenAPI drift, testes/cobertura, dependencias e build Docker. Subjects aceitos seguem
+`tipo(escopo): descricao`, por exemplo `feat(api): add idempotent command dispatch`.
+
+## SDD com OpenSpec
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/ledger" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "record_id": "evt-2026-001",
-    "payload": {"type": "irrigation_completed", "device_id": "sensor-01"}
-  }'
+npx --yes @fission-ai/openspec@1.10.0 list
+npx --yes @fission-ai/openspec@1.10.0 validate --all --strict --no-interactive
 ```
 
-### 4) Obter snapshot por dispositivo
+A mudanca ativa e `full-sdd-production-hardening`, com proposal, design, specs por capability,
+tasks e test plan. A pasta `.agents/skills/openspec-*` e a integracao oficial do OpenSpec para
+Codex. Nao ha estrutura first-party do Claude Code neste repositorio.
+
+## Docker
 
 ```bash
-curl "http://localhost:8000/api/v1/devices/sensor-01/snapshot"
+docker build -t hortelan-backend .
+docker run --rm -p 8000:8000 --env-file .env hortelan-backend
 ```
 
-## Variáveis de ambiente
+A imagem e multi-stage, executa como UID/GID 10001 e possui healthcheck sem depender de `curl`.
 
-Exemplo base:
+## Licenca
 
-```env
-APP_NAME=Hortelan Backend
-APP_ENV=development
-APP_PORT=8000
-CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
-
-AWS_REGION=us-east-1
-AWS_IOT_ENDPOINT=
-AWS_IOT_TOPIC_PREFIX=hortelan/devices
-
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-KAFKA_TOPIC_TELEMETRY=hortelan.telemetry
-KAFKA_TOPIC_COMMANDS=hortelan.commands
-
-REDIS_URL=redis://localhost:6379/0
-
-RELATIONAL_DB_URL=sqlite+aiosqlite:///./hortelan.db
-MONGO_URL=mongodb://localhost:27017
-MONGO_DB_NAME=hortelan
-
-WEB3_RPC_URL=http://localhost:8545
-WEB3_CONTRACT_ADDRESS=
-WEB3_CONTRACT_ABI_JSON=[]
-WEB3_ACCOUNT_PRIVATE_KEY=
-
-LOG_LEVEL=INFO
-ENABLE_METRICS=true
-```
-
-## Observabilidade e monitoramento
-
-A API inclui uma camada base de observabilidade:
-
-- **Logs estruturados em JSON** com `request_id`, `trace_id` e `span_id`.
-- **Métricas HTTP** em formato Prometheus (`/metrics`), incluindo total de requisições, requisições em andamento e latência média por rota.
-- **Health checks** separados para liveness (`/health/live`) e readiness (`/health/ready`).
-- **Headers de rastreabilidade** em todas as respostas: `x-request-id`, `x-trace-id`, `x-span-id`, `x-response-time-ms`.
-
-## Próximas implementações documentais
-
-Itens sugeridos para evolução do README e da documentação técnica:
-
-1. **Guia de autenticação/autorização** (quando JWT/OAuth estiver ativo).
-2. **Coleção Postman/Insomnia** versionada e linkada no repositório.
-3. **Seção de troubleshooting** com erros comuns de Kafka, Redis e Mongo.
-4. **Guia de contribuição** com convenções de commit/testes e fluxo de branches.
-5. **Checklist de publicação da API** (OpenAPI validado + smoke tests + deploy).
-
-## Testes e qualidade
-
-Rodar suíte de testes:
-
-```bash
-poetry run pytest -q
-```
-
-Checagem simples de sintaxe (equivalente ao pipeline):
-
-```bash
-python -m compileall app api tests
-```
-
-## Deploy na Vercel
-
-> Observação: em ambiente Vercel, se `RELATIONAL_DB_URL` não for informado, o fallback é `sqlite` em `/tmp/hortelan.db`.
-
-O projeto já está preparado para deploy ASGI:
-
-- `api/index.py` exporta a app FastAPI;
-- `vercel.json` roteia requisições para a função Python.
-
-Passos:
-
-1. Instalar e autenticar na CLI:
-
-   ```bash
-   npm i -g vercel
-   vercel login
-   ```
-
-2. Deploy:
-
-   ```bash
-   vercel
-   ```
-
-3. Configurar variáveis de ambiente no painel da Vercel.
-
-## CI/CD
-
-O pipeline principal foi estruturado para entrega contínua segura e reproduzível, cobrindo qualidade, segurança, build, versionamento, deploy controlado, rollback e observabilidade.
-
-- **Workflow principal:** `.github/workflows/cicd.yml`
-  - instalação de dependências e validação (`pip check`);
-  - lint (`ruff`), formatação (`ruff format --check`) e type-check (`mypy`);
-  - testes unitários e de integração separados por marcador pytest;
-  - cobertura mínima de 85% para o escopo do backend;
-  - segurança com `bandit`, `pip-audit`, `detect-secrets` e `gitleaks`;
-  - build de pacote Python (`python -m build`) + metadados versionados;
-  - build e publicação de imagem Docker no GHCR com tags rastreáveis;
-  - deploy automatizado em staging e deploy de produção controlado por environment;
-  - rollback manual para tag de imagem específica;
-  - validação pós-deploy de `/health`, `/health/ready` e `/metrics`.
-
-- **Workflows complementares de segurança/automação:**
-  - `.github/workflows/security-hardening.yml`
-  - `.github/workflows/auto-security-pr.yml`
-  - `.github/workflows/auto-bugfix-pr.yml`
-
-Para configuração detalhada de segredos, variáveis e operação de rollback, consulte:
-
-- `docs/cicd.md`
-
-## Cobertura estratégica do produto
-
-Há uma análise formal em:
-
-- `docs/strategic-feature-gap-analysis.md`
-
-Também existem endpoints dedicados para inspeção de cobertura/prontidão:
-
-- `/api/v1/strategic/coverage`
-- `/api/v1/product/readiness`
-- `/api/v1/product/modules/{module_slug}`
-
-## Roadmap técnico sugerido
-
-1. Expandir domínio de **horta/planta/tarefas**.
-2. Implementar **motor de regras + alertas**.
-3. Evoluir para **recomendações inteligentes** em camadas.
-4. Adicionar módulos de **comunidade, templates e marketplace**.
-5. Fortalecer **backoffice, suporte e trilhas LGPD**.
-
-## Licença
-
-Distribuído sob a licença **MIT**. Consulte o arquivo [LICENSE](./LICENSE).
+MIT. Consulte [LICENSE](LICENSE).

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
-from enum import Enum
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 
 
-class CircuitState(str, Enum):
+class CircuitState(StrEnum):
     CLOSED = 'closed'
     OPEN = 'open'
     HALF_OPEN = 'half_open'
@@ -37,7 +37,7 @@ class CircuitBreaker:
     @property
     def state(self) -> CircuitState:
         if self._state == CircuitState.OPEN and self._opened_at:
-            elapsed = datetime.now(timezone.utc) - self._opened_at
+            elapsed = datetime.now(UTC) - self._opened_at
             if elapsed >= timedelta(seconds=self.config.wait_duration_in_open_state_seconds):
                 self._state = CircuitState.HALF_OPEN
                 self._half_open_calls = 0
@@ -87,7 +87,7 @@ class CircuitBreaker:
 
     def _open(self) -> None:
         self._state = CircuitState.OPEN
-        self._opened_at = datetime.now(timezone.utc)
+        self._opened_at = datetime.now(UTC)
 
     def _close(self) -> None:
         self._state = CircuitState.CLOSED

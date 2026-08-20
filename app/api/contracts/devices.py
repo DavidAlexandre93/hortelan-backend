@@ -1,9 +1,9 @@
-from typing import Any
+from app.api.contracts.base import ApiModel, DeviceId
+from app.api.contracts.commands import CommandSnapshotOut
+from app.api.contracts.telemetry import TelemetryOut
 
-from pydantic import BaseModel
 
-
-class DeviceSnapshotOut(BaseModel):
-    device_id: str
-    telemetry: dict[str, Any] | None = None
-    command: dict[str, Any] | None = None
+class DeviceSnapshotOut(ApiModel):
+    device_id: DeviceId
+    telemetry: TelemetryOut | None = None
+    command: CommandSnapshotOut | None = None

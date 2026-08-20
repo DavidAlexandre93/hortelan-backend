@@ -1,5 +1,6 @@
 import logging
 from dataclasses import asdict
+from datetime import datetime
 
 from app.core.exceptions import TransientIntegrationError
 from app.domain.entities.models import TelemetryReading
@@ -27,15 +28,44 @@ class IngestTelemetryUseCase:
         self.document_repo = document_repo
 
     async def execute(self, reading: TelemetryReading) -> None:
-        await self.relational_repo.save(reading)
-        await self.document_repo.save(reading)
+        outbox_event_id = await self.relational_repo.save_with_outbox(reading)
+
+        try:
+            await self.document_repo.save(reading)
+        except Exception:
+            logger.exception(
+                'telemetry.document_projection.failed',
+                extra={'event': 'telemetry.document_projection.failed'},
+            )
 
         try:
             await self.telemetry_publisher.publish_telemetry(reading)
         except TransientIntegrationError:
             logger.warning('Falha transitória ao publicar telemetria; persistência local mantida.')
+        else:
+            await self.relational_repo.mark_outbox_published(outbox_event_id)
 
         try:
             await self.cache.set(f'telemetry:{reading.device_id}', asdict(reading), ttl_seconds=600)
         except TransientIntegrationError:
             logger.warning('Falha transitória ao atualizar cache de telemetria.')
+
+    async def reconcile_pending(self, limit: int = 100) -> int:
+        published = 0
+        for event in await self.relational_repo.list_pending_outbox(limit):
+            payload = dict(event.payload)
+            captured_at = payload.get('captured_at')
+            if isinstance(captured_at, str):
+                payload['captured_at'] = datetime.fromisoformat(captured_at)
+            reading = TelemetryReading(**payload)
+            try:
+                await self.telemetry_publisher.publish_telemetry(reading)
+            except TransientIntegrationError:
+                logger.warning(
+                    'telemetry.outbox.retry.failed',
+                    extra={'event': 'telemetry.outbox.retry.failed'},
+                )
+                continue
+            await self.relational_repo.mark_outbox_published(event.event_id)
+            published += 1
+        return published

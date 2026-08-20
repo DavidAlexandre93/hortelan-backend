@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -6,8 +7,8 @@ from dataclasses import asdict
 from aiokafka import AIOKafkaProducer
 
 from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
-from app.core.observability import metrics_registry
 from app.core.exceptions import TransientIntegrationError
+from app.core.observability import metrics_registry
 from app.core.settings import Settings
 from app.domain.entities.models import TelemetryReading
 from app.domain.ports.interfaces import TelemetryPublisherPort
@@ -19,7 +20,6 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._producer: AIOKafkaProducer | None = None
-        self._disabled = False
         self._circuit_breaker = CircuitBreaker(
             name='kafka_telemetry',
             config=CircuitBreakerConfig(
@@ -32,15 +32,14 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
         )
 
     async def _producer_or_create(self) -> AIOKafkaProducer | None:
-        if self._disabled:
-            return None
-
         if self._producer is None:
             try:
-                self._producer = AIOKafkaProducer(bootstrap_servers=self.settings.kafka_bootstrap_servers)
-                await self._producer.start()
+                self._producer = AIOKafkaProducer(
+                    bootstrap_servers=self.settings.kafka_bootstrap_servers
+                )
+                async with asyncio.timeout(self.settings.external_timeout_seconds):
+                    await self._producer.start()
             except Exception as exc:
-                self._disabled = True
                 self._producer = None
                 logger.exception('Falha ao inicializar produtor Kafka')
                 raise TransientIntegrationError('Falha ao inicializar Kafka producer') from exc
@@ -60,15 +59,20 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
         payload = json.dumps(asdict(reading), default=str).encode('utf-8')
         started = time.perf_counter()
         try:
-            await producer.send_and_wait(self.settings.kafka_topic_telemetry, payload)
+            async with asyncio.timeout(self.settings.external_timeout_seconds):
+                await producer.send_and_wait(self.settings.kafka_topic_telemetry, payload)
         except Exception as exc:
             self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call('kafka.publish_telemetry', time.perf_counter() - started, ok=False)
+            metrics_registry.track_external_call(
+                'kafka.publish_telemetry', time.perf_counter() - started, ok=False
+            )
             logger.exception('Falha ao publicar telemetria no Kafka')
             raise TransientIntegrationError('Falha ao publicar telemetria no Kafka') from exc
         else:
             self._circuit_breaker.on_success()
-            metrics_registry.track_external_call('kafka.publish_telemetry', time.perf_counter() - started, ok=True)
+            metrics_registry.track_external_call(
+                'kafka.publish_telemetry', time.perf_counter() - started, ok=True
+            )
 
     async def close(self) -> None:
         if self._producer:

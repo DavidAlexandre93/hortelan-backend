@@ -81,15 +81,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install bandit pip-audit detect-secrets
+          python -m pip install -e '.[dev]'
+          python -m pip install detect-secrets
 
       - name: Bandit SAST
-        run: bandit -r app api -x tests -ll
+        run: bandit -q -r app api scripts
 
       - name: Vulnerability audit (report)
         run: |
-          pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+          pip-audit --local --skip-editable --format json --output pip-audit-report.json || true
 
       - name: Enforce vulnerability policy
         run: |

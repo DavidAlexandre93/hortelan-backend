@@ -1,9 +1,14 @@
-from functools import lru_cache
 from contextlib import suppress
+from functools import lru_cache
 
 from app.application.services.coverage_service import CoverageService
-from app.application.use_cases.governance.register_ledger_record_use_case import RegisterLedgerRecordUseCase
-from app.application.use_cases.iot.dispatch_irrigation_command_use_case import DispatchIrrigationCommandUseCase
+from app.application.services.idempotency_service import IdempotencyService
+from app.application.use_cases.governance.register_ledger_record_use_case import (
+    RegisterLedgerRecordUseCase,
+)
+from app.application.use_cases.iot.dispatch_irrigation_command_use_case import (
+    DispatchIrrigationCommandUseCase,
+)
 from app.application.use_cases.iot.get_cached_command_use_case import GetCachedCommandUseCase
 from app.application.use_cases.iot.get_cached_telemetry_use_case import GetCachedTelemetryUseCase
 from app.application.use_cases.iot.get_device_snapshot_use_case import GetDeviceSnapshotUseCase
@@ -18,8 +23,6 @@ from app.infrastructure.persistence.document_repository import MongoTelemetryRep
 from app.infrastructure.persistence.relational_repository import SqlAlchemyTelemetryRepository
 
 
-
-
 class Container:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -31,6 +34,7 @@ class Container:
         self.relational_repo = SqlAlchemyTelemetryRepository(settings)
         self.document_repo = MongoTelemetryRepository(settings)
         self.coverage_service = CoverageService()
+        self.idempotency_service = IdempotencyService(self.relational_repo)
 
         self.ingest_telemetry_use_case = IngestTelemetryUseCase(
             telemetry_publisher=self.telemetry_publisher,
@@ -54,10 +58,10 @@ class Container:
         await self.telemetry_publisher.close()
 
         with suppress(Exception):
-            await self.cache.client.close()
+            await self.cache.client.aclose()
 
         with suppress(Exception):
-            self.document_repo.client.close()
+            await self.document_repo.client.close()
 
         with suppress(Exception):
             await self.relational_repo.engine.dispose()

@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+from pydantic import ValidationError
 
 from app.core.exceptions import UnauthorizedError
 from app.core.security import require_api_key
@@ -37,7 +38,7 @@ def test_require_api_key_blocks_missing_key_in_production_by_default(monkeypatch
     monkeypatch.delenv('API_KEY', raising=False)
     monkeypatch.setenv('APP_ENV', 'production')
 
-    with pytest.raises(UnauthorizedError):
+    with pytest.raises(ValidationError, match='API_KEY e obrigatoria'):
         asyncio.run(require_api_key(None))
 
 

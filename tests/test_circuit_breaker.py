@@ -1,4 +1,9 @@
-from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError, CircuitState
+from app.core.circuit_breaker import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerOpenError,
+    CircuitState,
+)
 
 
 def test_circuit_breaker_opens_after_failure_rate_threshold() -> None:
