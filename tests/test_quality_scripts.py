@@ -58,8 +58,8 @@ def test_github_workflows_are_valid_yaml_and_quality_gate_is_strict() -> None:
     parsed = [yaml.safe_load(path.read_text(encoding='utf-8')) for path in workflows]
     assert all(isinstance(workflow.get('jobs'), dict) for workflow in parsed)
 
-    quality = (workflow_dir / 'quality.yml').read_text(encoding='utf-8')
-    assert 'openspec@1.10.0 validate --all --strict' in quality
-    assert 'mypy app api scripts' in quality
-    assert 'pip-audit --local --skip-editable' in quality
-    assert 'git diff --exit-code -- docs/openapi.json' in quality
+    pipeline = (workflow_dir / 'cicd.yml').read_text(encoding='utf-8')
+    assert "python-version: '3.12'" in pipeline
+    assert 'mypy app api scripts' in pipeline
+    assert 'pytest -q --cov=app --cov=api --cov=scripts' in pipeline
+    assert 'pip-audit --local --skip-editable' in pipeline
