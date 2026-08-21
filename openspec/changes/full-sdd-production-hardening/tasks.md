@@ -36,17 +36,17 @@
 
 ## 6. Adapters e resiliência
 
-- [ ] 6.1 Extrair policy pequena de timeout/circuit breaker/metrica e aplicar a Redis, Kafka, AWS IoT e Web3 sem heranca; testar sucesso, falha e circuito aberto.
-- [ ] 6.2 Adicionar timeouts finitos a Redis/Mongo/Kafka e fechar recursos pelo lifecycle; testar shutdown parcial sem mascarar falhas criticas.
+- [x] 6.1 Extrair policy pequena de timeout/circuit breaker/metrica e aplicar a Redis, Kafka, AWS IoT e Web3 sem heranca; testar sucesso, falha e circuito aberto.
+- [x] 6.2 Adicionar timeouts finitos a Redis/Mongo/Kafka e fechar recursos pelo lifecycle; testar shutdown parcial sem mascarar falhas criticas.
 - [x] 6.3 Corrigir timezone-aware UTC e retornos tipados em entidades/casos de uso/adapters; mypy deve passar sem `ignore-missing-imports` global.
 - [x] 6.4 Corrigir testes de rotas para substituir use cases/ports e remover acoplamento a campos concretos do container.
 
 ## 7. Frontend e landing integrados
 
-- [ ] 7.1 Corrigir o E2E flakey do dashboard com espera por estado semanticamente estavel e confirmar 40/40 cenarios em desktop/mobile.
+- [x] 7.1 Corrigir o E2E flakey do dashboard com espera por estado semanticamente estavel e confirmar 40/40 cenarios em desktop/mobile.
 - [x] 7.2 Validar a tela global de indisponibilidade/incident contra o novo envelope e health 503 sem expor diagnosticos.
-- [ ] 7.3 Executar gates completos do frontend e landing; registrar cobertura honesta e manter o plano progressivo ate 100% sem reduzir o denominador.
-- [ ] 7.4 Inspecionar visualmente rotas e estados de erro em 320/768/1440, tema claro/escuro e reduced motion; registrar evidencia e defeitos residuais.
+- [x] 7.3 Executar gates completos do frontend e landing; registrar cobertura honesta e manter o plano progressivo ate 100% sem reduzir o denominador.
+- [x] 7.4 Inspecionar visualmente rotas e estados de erro em 320/768/1440, tema claro/escuro e reduced motion; registrar evidencia e defeitos residuais.
 
 ## 8. Testes, documentacao e entrega
 

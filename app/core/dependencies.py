@@ -55,13 +55,20 @@ class Container:
         )
 
     async def close(self) -> None:
-        await self.telemetry_publisher.close()
+        with suppress(Exception):
+            await self.telemetry_publisher.close()
 
         with suppress(Exception):
-            await self.cache.client.aclose()
+            await self.cache.close()
 
         with suppress(Exception):
-            await self.document_repo.client.close()
+            await self.command_adapter.close()
+
+        with suppress(Exception):
+            await self.blockchain_adapter.close()
+
+        with suppress(Exception):
+            await self.document_repo.close()
 
         with suppress(Exception):
             await self.relational_repo.engine.dispose()

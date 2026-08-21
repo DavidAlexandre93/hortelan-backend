@@ -86,6 +86,16 @@ O objetivo e demonstrar comportamento, seguranca e confiabilidade, usando cobert
 
 ## Comandos de aceitacao
 
+### Evidencia atualizada em 2026-08-20
+
+- Backend: `pytest -q` passou com 71 testes; cobertura passou com 91,78% total e gate atual de 90%.
+- Frontend: `npm run quality:gate` passou; 95 testes de componentes, 8 testes Node e 42 E2E passaram.
+- Landing: `npm run quality:gate` passou; 84 testes passaram, cobertura de statements 98,49% e build principal/subpath validado.
+- OpenSpec backend: `openspec validate --all --strict --no-interactive` passou.
+- Backend adapter slice: Ruff e mypy passaram após a policy de resiliência e lifecycle explícito.
+- Docker: não executado porque o comando `docker` não está disponível neste ambiente Windows.
+- Gap residual: cobertura first-party global ainda não atingiu o requisito final de 100%; os módulos com linhas faltantes permanecem listados pelo relatório `term-missing`.
+
 ```text
 npx openspec validate --all --strict --no-interactive
 python -m ruff check .

@@ -1,14 +1,13 @@
 import asyncio
 import json
 import logging
-import time
 from dataclasses import asdict
 
 from aiokafka import AIOKafkaProducer
 
-from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.circuit_breaker import CircuitBreakerOpenError
 from app.core.exceptions import TransientIntegrationError
-from app.core.observability import metrics_registry
+from app.core.resilience import ExternalCallPolicy
 from app.core.settings import Settings
 from app.domain.entities.models import TelemetryReading
 from app.domain.ports.interfaces import TelemetryPublisherPort
@@ -20,16 +19,10 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._producer: AIOKafkaProducer | None = None
-        self._circuit_breaker = CircuitBreaker(
-            name='kafka_telemetry',
-            config=CircuitBreakerConfig(
-                failure_rate_threshold=settings.circuit_breaker_failure_rate_threshold,
-                sliding_window_size=settings.circuit_breaker_sliding_window_size,
-                minimum_number_of_calls=settings.circuit_breaker_minimum_calls,
-                wait_duration_in_open_state_seconds=settings.circuit_breaker_wait_duration_seconds,
-                permitted_calls_in_half_open_state=settings.circuit_breaker_permitted_half_open_calls,
-            ),
+        self._policy = ExternalCallPolicy.from_settings(
+            'kafka_telemetry', 'kafka.publish_telemetry', settings
         )
+        self._circuit_breaker = self._policy.circuit_breaker
 
     async def _producer_or_create(self) -> AIOKafkaProducer | None:
         if self._producer is None:
@@ -47,7 +40,7 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
 
     async def publish_telemetry(self, reading: TelemetryReading) -> None:
         try:
-            self._circuit_breaker.call_permitted()
+            started = self._policy.start()
         except CircuitBreakerOpenError as exc:
             raise TransientIntegrationError('Circuit breaker aberto para Kafka') from exc
 
@@ -57,22 +50,15 @@ class KafkaTelemetryAdapter(TelemetryPublisherPort):
             raise TransientIntegrationError('Producer Kafka indisponível')
 
         payload = json.dumps(asdict(reading), default=str).encode('utf-8')
-        started = time.perf_counter()
         try:
             async with asyncio.timeout(self.settings.external_timeout_seconds):
                 await producer.send_and_wait(self.settings.kafka_topic_telemetry, payload)
         except Exception as exc:
-            self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call(
-                'kafka.publish_telemetry', time.perf_counter() - started, ok=False
-            )
+            self._policy.failure(started)
             logger.exception('Falha ao publicar telemetria no Kafka')
             raise TransientIntegrationError('Falha ao publicar telemetria no Kafka') from exc
         else:
-            self._circuit_breaker.on_success()
-            metrics_registry.track_external_call(
-                'kafka.publish_telemetry', time.perf_counter() - started, ok=True
-            )
+            self._policy.success(started)
 
     async def close(self) -> None:
         if self._producer:

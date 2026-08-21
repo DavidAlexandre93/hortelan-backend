@@ -1,13 +1,12 @@
 import asyncio
 import json
 import logging
-import time
 
 from web3 import Web3
 
-from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.circuit_breaker import CircuitBreakerOpenError
 from app.core.exceptions import InfrastructureError
-from app.core.observability import metrics_registry
+from app.core.resilience import ExternalCallPolicy
 from app.core.settings import Settings
 from app.domain.entities.models import LedgerRecord
 from app.domain.ports.interfaces import BlockchainPort
@@ -27,16 +26,10 @@ class Web3BlockchainAdapter(BlockchainPort):
             if settings.web3_contract_address
             else None
         )
-        self._circuit_breaker = CircuitBreaker(
-            name='web3_ledger',
-            config=CircuitBreakerConfig(
-                failure_rate_threshold=settings.circuit_breaker_failure_rate_threshold,
-                sliding_window_size=settings.circuit_breaker_sliding_window_size,
-                minimum_number_of_calls=settings.circuit_breaker_minimum_calls,
-                wait_duration_in_open_state_seconds=settings.circuit_breaker_wait_duration_seconds,
-                permitted_calls_in_half_open_state=settings.circuit_breaker_permitted_half_open_calls,
-            ),
+        self._policy = ExternalCallPolicy.from_settings(
+            'web3_ledger', 'web3.write_record', settings
         )
+        self._circuit_breaker = self._policy.circuit_breaker
 
     def _send_transaction(self, record: LedgerRecord) -> str:
         private_key = self.settings.web3_account_private_key.get_secret_value()
@@ -63,28 +56,24 @@ class Web3BlockchainAdapter(BlockchainPort):
             return record
 
         try:
-            self._circuit_breaker.call_permitted()
+            started = self._policy.start()
         except CircuitBreakerOpenError:
             return record
 
-        started = time.perf_counter()
         try:
             tx_hash = await asyncio.wait_for(
                 asyncio.to_thread(self._send_transaction, record),
                 timeout=self.settings.external_timeout_seconds,
             )
         except Exception as exc:
-            self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call(
-                'web3.write_record', time.perf_counter() - started, ok=False
-            )
+            self._policy.failure(started)
             logger.exception('Falha ao registrar evento no Web3')
             raise InfrastructureError('Falha ao registrar evento em blockchain') from exc
         else:
-            self._circuit_breaker.on_success()
-            metrics_registry.track_external_call(
-                'web3.write_record', time.perf_counter() - started, ok=True
-            )
+            self._policy.success(started)
             record.tx_hash = tx_hash
             record.confirmed = True
             return record
+
+    async def close(self) -> None:
+        return None

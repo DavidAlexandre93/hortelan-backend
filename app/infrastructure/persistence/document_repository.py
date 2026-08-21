@@ -20,3 +20,6 @@ class MongoTelemetryRepository(DocumentTelemetryRepositoryPort):
 
     async def save(self, reading: TelemetryReading) -> None:
         await self.collection.insert_one(asdict(reading))
+
+    async def close(self) -> None:
+        await self.client.close()

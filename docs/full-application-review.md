@@ -245,7 +245,7 @@ except CircuitBreakerOpenError:
     return degraded_response
 except Exception as exc:
     breaker.on_failure()
-    raise TransientIntegrationError("...") from exc
+    raise TransientIntegrationError('...') from exc
 else:
     breaker.on_success()
 ```

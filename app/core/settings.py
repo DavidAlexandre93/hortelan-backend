@@ -45,7 +45,9 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(
         default_factory=lambda: ['http://localhost:3000', 'http://localhost:5173']
     )
-    cors_methods: list[str] = Field(default_factory=lambda: ['GET', 'POST', 'OPTIONS'])
+    cors_methods: list[str] = Field(
+        default_factory=lambda: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+    )
     cors_headers: list[str] = Field(
         default_factory=lambda: [
             'Authorization',

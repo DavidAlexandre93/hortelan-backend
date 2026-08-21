@@ -1,14 +1,13 @@
 import asyncio
 import json
 import logging
-import time
 from typing import Any
 
 from redis.asyncio import Redis
 
-from app.core.circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitBreakerOpenError
+from app.core.circuit_breaker import CircuitBreakerOpenError
 from app.core.exceptions import TransientIntegrationError
-from app.core.observability import metrics_registry
+from app.core.resilience import ExternalCallPolicy
 from app.core.settings import Settings
 from app.domain.ports.interfaces import CachePort
 
@@ -20,61 +19,39 @@ class RedisCacheAdapter(CachePort):
         self._timeout_seconds = settings.external_timeout_seconds
         self.client = Redis.from_url(settings.redis_url, decode_responses=True)
         self._fallback_store: dict[str, dict[str, Any]] = {}
-        self._circuit_breaker = CircuitBreaker(
-            name='redis_cache',
-            config=CircuitBreakerConfig(
-                failure_rate_threshold=settings.circuit_breaker_failure_rate_threshold,
-                sliding_window_size=settings.circuit_breaker_sliding_window_size,
-                minimum_number_of_calls=settings.circuit_breaker_minimum_calls,
-                wait_duration_in_open_state_seconds=settings.circuit_breaker_wait_duration_seconds,
-                permitted_calls_in_half_open_state=settings.circuit_breaker_permitted_half_open_calls,
-            ),
-        )
+        self._policy = ExternalCallPolicy.from_settings('redis_cache', 'redis', settings)
+        self._circuit_breaker = self._policy.circuit_breaker
 
     async def set(self, key: str, value: dict[str, Any], ttl_seconds: int = 300) -> None:
         self._fallback_store[key] = value
         try:
-            self._circuit_breaker.call_permitted()
+            started = self._policy.start()
         except CircuitBreakerOpenError:
             return
-
-        started = time.perf_counter()
         try:
             async with asyncio.timeout(self._timeout_seconds):
                 await self.client.set(key, json.dumps(value, default=str), ex=ttl_seconds)
         except Exception as exc:
-            self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call(
-                'redis.set', time.perf_counter() - started, ok=False
-            )
+            self._policy.failure(started)
             logger.warning('Falha ao gravar no Redis; mantendo fallback em memória')
             raise TransientIntegrationError('Falha ao gravar cache no Redis') from exc
         else:
-            self._circuit_breaker.on_success()
-            metrics_registry.track_external_call(
-                'redis.set', time.perf_counter() - started, ok=True
-            )
+            self._policy.success(started)
 
     async def get(self, key: str) -> dict[str, Any] | None:
         try:
-            self._circuit_breaker.call_permitted()
+            started = self._policy.start()
         except CircuitBreakerOpenError:
             return self._fallback_store.get(key)
-
-        started = time.perf_counter()
         try:
             async with asyncio.timeout(self._timeout_seconds):
                 value = await self.client.get(key)
         except Exception:
             logger.warning('Falha ao ler Redis; retornando fallback em memória')
-            self._circuit_breaker.on_failure()
-            metrics_registry.track_external_call(
-                'redis.get', time.perf_counter() - started, ok=False
-            )
+            self._policy.failure(started)
             return self._fallback_store.get(key)
 
-        self._circuit_breaker.on_success()
-        metrics_registry.track_external_call('redis.get', time.perf_counter() - started, ok=True)
+        self._policy.success(started)
         if value:
             try:
                 parsed = json.loads(value)
@@ -87,3 +64,6 @@ class RedisCacheAdapter(CachePort):
             self._fallback_store[key] = parsed
             return parsed
         return self._fallback_store.get(key)
+
+    async def close(self) -> None:
+        await self.client.aclose()

@@ -32,6 +32,9 @@ class FakeRedis:
             raise ConnectionError('redis unavailable')
         return self.values.get(key)
 
+    async def aclose(self) -> None:
+        return None
+
 
 @pytest.mark.asyncio
 async def test_redis_success_fallback_invalid_payload_and_open_circuit() -> None:
@@ -64,6 +67,7 @@ async def test_redis_write_failure_is_typed_and_read_failure_uses_fallback() -> 
         await adapter.set('key', {'cached': True})
     client.fail_get = True
     assert await adapter.get('key') == {'cached': True}
+    await adapter.close()
 
 
 class FakeKafkaProducer:
@@ -121,6 +125,12 @@ async def test_kafka_lazy_start_publish_close_and_failures(monkeypatch: pytest.M
     adapter._producer = failing_send  # type: ignore[assignment]
     with pytest.raises(TransientIntegrationError, match='publicar telemetria'):
         await adapter.publish_telemetry(_reading())
+
+
+@pytest.mark.asyncio
+async def test_external_adapters_close_without_owned_resources() -> None:
+    await AwsIotCoreAdapter(Settings(otel_enabled=False)).close()
+    await Web3BlockchainAdapter(Settings(otel_enabled=False)).close()
 
 
 class FakeAwsClient:
@@ -196,4 +206,4 @@ async def test_mongo_repository_uses_async_collection(monkeypatch: pytest.Monkey
     repository.collection = Collection()  # type: ignore[assignment]
     await repository.save(_reading())
     assert inserted[0]['device_id'] == 'sensor-1'
-    await repository.client.close()
+    await repository.close()

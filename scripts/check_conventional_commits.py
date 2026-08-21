@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 import shutil
+
 # O binario e resolvido e a chamada usa argv sem shell; as revisoes sao validadas.
 import subprocess  # nosec B404
 
