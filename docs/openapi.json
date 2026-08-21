@@ -767,7 +767,7 @@
   },
   "info": {
     "contact": {
-      "email": "tech@hortelan.local",
+      "email": "tech@hortelan.example",
       "name": "Equipe Hortelan"
     },
     "description": "API da plataforma Hortelan para integracao IoT, ingestao de telemetria, envio de comandos e rastreabilidade de cobertura estrategica do produto.",

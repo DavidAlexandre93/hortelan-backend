@@ -69,7 +69,7 @@ app = FastAPI(
         'comandos e rastreabilidade de cobertura estrategica do produto.'
     ),
     version=settings.app_version,
-    contact={'name': 'Equipe Hortelan', 'email': 'tech@hortelan.local'},
+    contact={'name': 'Equipe Hortelan', 'email': 'tech@hortelan.example'},
     license_info={'name': 'MIT', 'url': 'https://opensource.org/licenses/MIT'},
     openapi_version='3.1.0',
     openapi_tags=[
