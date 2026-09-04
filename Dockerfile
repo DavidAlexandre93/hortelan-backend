@@ -32,6 +32,8 @@ RUN groupadd --system --gid 10001 hortelan \
 COPY --from=builder /opt/venv /opt/venv
 COPY --chown=hortelan:hortelan app ./app
 COPY --chown=hortelan:hortelan api ./api
+COPY --chown=hortelan:hortelan migrations ./migrations
+COPY --chown=hortelan:hortelan alembic.ini ./alembic.ini
 
 USER hortelan
 

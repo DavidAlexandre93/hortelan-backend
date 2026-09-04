@@ -164,6 +164,16 @@ docker build -t hortelan-backend .
 docker run --rm -p 8000:8000 --env-file .env hortelan-backend
 ```
 
+Antes de iniciar uma nova versao, aplique o schema como etapa separada do deploy:
+
+```bash
+.venv/Scripts/alembic upgrade head
+```
+
+O processo web nao executa migracoes nem cria tabelas implicitamente. Em banco legado criado
+antes do Alembic, valide o schema e execute `alembic stamp 001_initial_schema` uma unica vez
+somente depois de confirmar que as tabelas e indices existentes correspondem a revisao inicial.
+
 A imagem e multi-stage, executa como UID/GID 10001 e possui healthcheck sem depender de `curl`.
 
 ## Licenca

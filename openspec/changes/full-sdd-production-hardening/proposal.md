@@ -2,6 +2,8 @@
 
 O backend possui uma boa base hexagonal, mas a linha de base reproduzivel falha: dois testes estao quebrados, a cobertura global e 74,09%, ha dez erros de tipagem, dependencias divergentes e contratos de erro/saude que podem expor diagnosticos sensiveis. A mudanca e necessaria agora para oferecer ao frontend contratos confiaveis, falhas recuperaveis e evidencia automatizada de seguranca e qualidade.
 
+A auditoria executavel de 2026-09-04 atualizou o diagnostico: os gates atuais passam, mas ainda existem riscos de producao que o gate nao cobre, principalmente `create_all` no startup sem migracoes versionadas, rate limit somente local, outbox sem relay/reconciliacao operacional e autorizacao baseada em uma API key global. Os achados completos e a arquitetura-alvo estao em `audit.md`.
+
 ## What Changes
 
 - Padronizar DTOs de entrada, saida, erro, health e paginacao com enums e OpenAPI 3.1 deterministico.
@@ -42,3 +44,4 @@ Nenhuma. Este e o primeiro baseline OpenSpec canonico do backend.
 - O frontend podera tratar health, indisponibilidade, conflito idempotente e incidentes por contratos estaveis; clientes existentes preservam as rotas e campos de sucesso atuais sempre que possivel.
 - Novas dependencias de runtime somente serao aceitas quando substituirem implementacao insegura ou habilitarem um requisito verificavel; ferramentas de qualidade ficam no grupo de desenvolvimento.
 - A ativacao de exportacao OTLP e integracoes externas continua controlada por ambiente e deve falhar de modo seguro.
+- A execucao web nao deve aplicar migracoes implicitamente; schema, relay de outbox e coordenacao de rate limit devem ter operacao explicita e verificavel.

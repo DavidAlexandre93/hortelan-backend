@@ -1,5 +1,7 @@
 # Plano de testes — full-sdd-production-hardening
 
+Os riscos arquiteturais identificados na auditoria de 2026-09-04 estao detalhados em `audit.md` e exigem evidencia adicional para migracoes, rate limit distribuido, autorizacao de integracao e relay de outbox; os gates de unidade sozinhos nao comprovam esses comportamentos.
+
 ## Objetivo e politica de cobertura
 
 O objetivo e demonstrar comportamento, seguranca e confiabilidade, usando cobertura como evidencia complementar. O denominador inclui todo codigo first-party mantido em `app`, `api` e `scripts`; podem ser excluidos apenas arquivos declarativos, generated code ou entrypoints impossiveis de executar no test runner, sempre com justificativa versionada. Os modulos de contratos, erros, redacao, idempotencia, health e transacao exigem 100% imediato de statements, branches, functions e lines. O restante usa ratchet monotono ate 100% global.
@@ -88,7 +90,9 @@ O objetivo e demonstrar comportamento, seguranca e confiabilidade, usando cobert
 
 ### Evidencia atualizada em 2026-08-20
 
-- Backend: `pytest -q` passou com 71 testes; cobertura passou com 91,78% total e gate atual de 90%.
+- Backend: `pytest -q` passou com 72 testes; cobertura passou com 91,83% total e gate atual de 90%.
+- Backend migration slice: `alembic upgrade head` passou em SQLite limpo; o processo web nao executa mais `create_all` no startup.
+- Backend static/build: Ruff, format, MyPy, `pip check`, `pip-audit` e `python -m build` passaram.
 - Frontend: `npm run quality:gate` passou; 95 testes de componentes, 8 testes Node e 42 E2E passaram.
 - Landing: `npm run quality:gate` passou; 84 testes passaram, cobertura de statements 98,49% e build principal/subpath validado.
 - OpenSpec backend: `openspec validate --all --strict --no-interactive` passou.

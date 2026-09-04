@@ -64,6 +64,8 @@ jobs:
               - 'pytest.ini'
               - 'Dockerfile'
               - '.dockerignore'
+              - 'alembic.ini'
+              - 'migrations/**'
               - '.github/workflows/**'
 
   quality:
@@ -91,6 +93,10 @@ jobs:
 
       - name: Validate dependency graph
         run: pip check
+
+      - name: Validate relational migrations
+        run: |
+          RELATIONAL_DB_URL=sqlite+aiosqlite:////tmp/hortelan-ci.db alembic upgrade head
 
       - name: Lint
         run: ruff check app api scripts tests

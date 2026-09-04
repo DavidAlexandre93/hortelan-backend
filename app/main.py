@@ -52,7 +52,6 @@ def _inject_vercel_analytics(response: HTMLResponse) -> HTMLResponse:
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     container = get_container()
     try:
-        await container.relational_repo.init_schema()
         logger.info('application.started', extra={'event': 'application.started'})
         yield
     finally:

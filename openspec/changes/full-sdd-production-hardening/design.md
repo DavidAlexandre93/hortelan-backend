@@ -2,6 +2,8 @@
 
 Ver `proposal.md` para a motivacao. O backend ja separa dominio, casos de uso, portas e adapters; os problemas estao principalmente nos contratos de borda, no composition root global, na seguranca de diagnosticos e na ausencia de garantias persistentes para repeticao e efeitos distribuidos. Os frontends irmaos ja possuem OpenSpec e esperam health, correlacao e idempotencia que hoje o backend nao garante.
 
+A auditoria atualizada e `audit.md`; ela e a referencia para os gaps de producao ainda abertos e para o escopo incremental abaixo.
+
 ## Goals / Non-Goals
 
 **Goals:**

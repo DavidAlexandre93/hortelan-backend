@@ -55,3 +55,8 @@
 - [x] 8.3 Atualizar README, `.env.example`, Swagger, runbooks e ADRs de consistencia/observabilidade/idempotencia; verificar links e exemplos.
 - [ ] 8.4 Executar OpenSpec estrito, lint, format, mypy, pytest/coverage, audit, build Docker e smoke health; anexar comandos/resultados a `test-plan.md`.
 - [ ] 8.5 Revisar diff e status dos tres repositorios, confirmar preservacao de mudancas do usuario e deixar o change ativo ate todos os itens estarem comprovados.
+- [x] 8.6 Manter `audit.md` com achados verificaveis, arquitetura-alvo, limites de seguranca e riscos residuais coerentes com codigo e specs.
+- [x] 8.7 Substituir `create_all` no processo web por migracoes versionadas executaveis fora dele, com constraints/indices e validacao de upgrade em banco limpo.
+- [ ] 8.8 Tornar rate limit e autorizacao coerentes com topologia: backend compartilhado em producao ou falha segura de configuracao, API key restrita ao modelo de integracao interna.
+- [ ] 8.9 Implementar relay de outbox com retry/backoff, estado de falha observavel e deduplicacao, sem prometer transacao distribuida.
+- [ ] 8.10 Adicionar contract/integration tests para os gaps de `audit.md` e atualizar gates/documentacao com evidencias reais.
