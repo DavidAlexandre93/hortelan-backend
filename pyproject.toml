@@ -22,7 +22,7 @@ dependencies = [
   "redis==8.1.0",
   "sqlalchemy==2.0.52",
   "uvicorn[standard]==0.52.4",
-  "web3==7.16.0",
+  "web3==8.0.0",
 ]
 
 [project.optional-dependencies]
