@@ -19,7 +19,7 @@ dependencies = [
   "opentelemetry-instrumentation-fastapi==0.65b0",
   "opentelemetry-sdk==1.44.0",
   "pydantic-settings==2.15.0",
-  "pymongo==4.17.0",
+  "pymongo==4.18.0",
   "redis==8.1.0",
   "sqlalchemy==2.0.52",
   "uvicorn[standard]==0.52.4",
