@@ -11,7 +11,7 @@ dependencies = [
   "alembic==1.16.5",
   "aiosqlite==0.22.1",
   "boto3==1.43.76",
-  "email-validator==2.3.0",
+  "email-validator==2.4.0",
   "fastapi==0.141.1",
   "httpx==0.28.1",
   "opentelemetry-api==1.44.0",
